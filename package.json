@@ -1,0 +1,30 @@
+{
+  "name": "code-story",
+  "version": "1.0.0",
+  "description": "Generate workflows, description and whole story of what is going on in the code.",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/galethil/code-story.git"
+  },
+  "keywords": [
+    "parse",
+    "generate",
+    "documentation",
+    "workflow",
+    "describe",
+    "story"
+  ],
+  "author": "galethil",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/galethil/code-story/issues"
+  },
+  "homepage": "https://github.com/galethil/code-story#readme",
+  "dependencies": {
+    "@babel/parser": "^7.10.3"
+  }
+}
