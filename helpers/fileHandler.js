@@ -1,5 +1,6 @@
 const { getAst, getFileFromImport } = require('./loaders');
 const {
+  isIterable,
   hasArguments,
   isReturnStatement,
   isCallExpression,
@@ -14,6 +15,8 @@ const {
   isIfStatement,
   isArrowFunctionExpression,
   isMemberExpression,
+  isNewExpression,
+  isUnaryExpression,
   isEs6Function,
   isClassicFunction,
   isTryStatement,
@@ -25,7 +28,9 @@ const {
   isImportTypeImport,
   isRequireTypeImport,
   isMultiVariableImport,
-  isLocalPath
+  isLocalPath,
+  isStringLiteral,
+  isRegExpLiteral
 } = require('./questions');
 const {
   getFileImports,
@@ -82,7 +87,7 @@ class FileHandler {
 
   // FORMATTED OUTPUTS
 
-  getFormattedName (element) {
+  getFormattedName(element) {
     const formatted = {
       loc: element.loc
     };
@@ -100,7 +105,7 @@ class FileHandler {
     return formatted;
   }
 
-  async getFormattedThrowStatement (element) {
+  async getFormattedThrowStatement(element) {
     const formatted = this.getFormattedName(element);
     if (isThrowStatement(element)) {
       formatted.type = 'ThrowStatement';
@@ -108,7 +113,7 @@ class FileHandler {
     return formatted;
   }
 
-  async getFormattedCalledFunction (element) {
+  async getFormattedCalledFunction(element) {
     const formattedFunc = {
       loc: element.loc
     };
@@ -119,12 +124,12 @@ class FileHandler {
         formattedFunc.name = element.callee.name;
         formattedFunc.variableName = element.callee.name;
 
-      // e.g. logger.debug()
+        // e.g. logger.debug()
       } else if (element.callee && element.callee.object && element.callee.object.name && element.callee.property && element.callee.property.name) {
         formattedFunc.name = `${element.callee.object.name}.${element.callee.property.name}`;
         formattedFunc.variableName = element.callee.object.name;
 
-      // e.g. (await someAsyncCall())
+        // e.g. (await someAsyncCall())
       } else if (element.callee && isMemberExpression(element.callee)) {
         return await this.getFormattedCalledFunction(element.callee.object);
       } else {
@@ -142,7 +147,9 @@ class FileHandler {
 
       // following the imports
       if (this.options && this.options.followImports && (this.options.followImportsDeptLevel === undefined || (this.options.followImportsDeptLevel && this.options.followImportsDeptLevel !== 0))) {
+
         if (fromImport.isLocalImport) {
+
           const importLocalPath = `${getFolderFromImport(this.file)}/${fromImport.importFrom}`;
           const filePath = await getFileFromImport(importLocalPath);
 
@@ -151,7 +158,7 @@ class FileHandler {
               filePath,
               {
                 ...this.options,
-                followImportsDeptLevel: this.options.followImportsDeptLevel ? this.options.followImportsDeptLevel-- : this.options.followImportsDeptLevel
+                followImportsDeptLevel: this.options.followImportsDeptLevel ? this.options.followImportsDeptLevel - 1 : this.options.followImportsDeptLevel
               }
             );
             await functionFile.load();
@@ -167,8 +174,14 @@ class FileHandler {
 
   // FUNCTIONS
 
-  async getListOfCalledFunctions (elements) {
+  async getListOfCalledFunctions(elements) {
     let listOfCalledFunctions = [];
+
+    if (!isIterable(elements)) {
+      console.log('Non iterable elements');
+
+      return listOfCalledFunctions;
+    }
     // elements.forEach((bodyElement, index) => {
     for (const bodyElement of elements) {
 
@@ -211,6 +224,16 @@ class FileHandler {
         // nothing to do with identifiers
       } else if (isObjectExpression(bodyElement)) {
         // nothing to do with object expressions
+      } else if (isStringLiteral(bodyElement)) {
+        // nothing to do with string literal
+      } else if (isNewExpression(bodyElement)) {
+        // new class e.g. new URL('http://example.com')
+        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInNewExpression(bodyElement));
+      } else if (isRegExpLiteral(bodyElement)) {
+        // nothing to do with string literal
+      } else if (isUnaryExpression(bodyElement)) {
+        // nothing to do with string literal
+        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInUnaryExpression(bodyElement));
       } else {
         console.log('Type not defined', bodyElement.type);
       }
@@ -219,37 +242,37 @@ class FileHandler {
     return listOfCalledFunctions;
   }
 
-  async getListOfCalledFunctionsInMemberExpression (element) {
+  async getListOfCalledFunctionsInMemberExpression(element) {
     if (!isMemberExpression(element)) throw Error('This is not a member expression in getListOfCalledFunctionsInMemberExpression');
 
     return await this.getListOfCalledFunctions([element.property]);
   }
 
-  async getListOfCalledFunctionsInTemplateLiteral (element) {
+  async getListOfCalledFunctionsInTemplateLiteral(element) {
     if (!isTemplateLiteral(element)) throw Error('This is not a template literal in getListOfCalledFunctionsInTemplateLiteral');
 
     return await this.getListOfCalledFunctions(element.expressions);
   }
 
-  async getListOfCalledFunctionsInTryCache (element) {
+  async getListOfCalledFunctionsInTryCache(element) {
     if (!isTryStatement(element)) throw Error('This is not a try cache in getListOfCalledFunctionsInTryCache');
 
     return await this.getListOfCalledFunctions([element.block, element.handler.body]);
   }
 
-  async getListOfCalledFunctionsInTryStatement (element) {
+  async getListOfCalledFunctionsInTryStatement(element) {
     if (!isTryStatement(element)) throw Error('This is not a try statement in getListOfCalledFunctionsInTryStatement');
 
     return await this.getListOfCalledFunctions([element.block]);
   }
 
-  async getListOfCalledFunctionsInCatchClause (element) {
+  async getListOfCalledFunctionsInCatchClause(element) {
     if (!isCatchClause(element)) throw Error('This is not a catch clause in getListOfCalledFunctionsInCatchClause');
 
     return await this.getListOfCalledFunctions([element.body]);
   }
 
-  async getListOfCalledFunctionsInReturnStatement (element) {
+  async getListOfCalledFunctionsInReturnStatement(element) {
     if (!isReturnStatement(element)) throw Error('This is not a return statement in getListOfCalledFunctionsInReturnStatement');
     let callee = [];
     if (element.callee) {
@@ -258,25 +281,25 @@ class FileHandler {
     return await this.getListOfCalledFunctions(callee);
   }
 
-  async getListOfCalledFunctionsInArrayExpression (element) {
+  async getListOfCalledFunctionsInArrayExpression(element) {
     if (!isArrayExpression(element)) throw Error('This is not a array expression in getListOfCalledFunctionsInArrayExpression');
 
     return await this.getListOfCalledFunctions(element.elements);
   }
 
-  async getListOfCalledFunctionsInArrowFunctionExpression (element) {
+  async getListOfCalledFunctionsInArrowFunctionExpression(element) {
     if (!isArrowFunctionExpression(element)) throw Error('This is not a arrow function expression in getListOfCalledFunctionsInArrowFunctionExpression');
 
     return await this.getListOfCalledFunctions([element.body]);
   }
 
-  async getListOfCalledFunctionsInAwaitExpression (element) {
+  async getListOfCalledFunctionsInAwaitExpression(element) {
     if (!isAwaitExpression(element)) throw Error('This is not a await expression in getListOfCalledFunctionsInAwaitExpression');
 
     return await this.getListOfCalledFunctions([element.argument]);
   }
 
-  async getListOfCalledFunctionsInVariableDeclarator (element) {
+  async getListOfCalledFunctionsInVariableDeclarator(element) {
     if (!isVariableDeclarator(element)) throw Error('This is not a variable declarator in getListOfCalledFunctionsInVariableDeclarator');
     let childElements = [];
     if (element.init && !isIdentifier(element.init)) {
@@ -287,37 +310,49 @@ class FileHandler {
     return await this.getListOfCalledFunctions(childElements);
   }
 
-  async getListOfCalledFunctionsInVariableDeclaration (element) {
+  async getListOfCalledFunctionsInVariableDeclaration(element) {
     if (!isVariableDeclaration(element)) throw Error('This is not a variable declaration in getListOfCalledFunctionsInVariableDeclaration');
 
     return await this.getListOfCalledFunctions(element.declarations);
   }
 
-  async getListOfCalledFunctionsInAssignmentExpression (element) {
+  async getListOfCalledFunctionsInAssignmentExpression(element) {
     if (!isAssignmentExpression(element)) throw Error('This is not a assignment expression in getListOfCalledFunctionsInAssignmentExpression');
 
     return await this.getListOfCalledFunctions([element.right]);
   }
 
-  async getListOfCalledFunctionsInExpressionStatement (element) {
+  async getListOfCalledFunctionsInExpressionStatement(element) {
     if (!isExpressionStatement(element)) throw Error('This is not a expression statement in getListOfCalledFunctionsInExpressionStatement');
 
     return await this.getListOfCalledFunctions([element.expression]);
   }
 
-  async getListOfCalledFunctionsInIfStatement (element) {
+  async getListOfCalledFunctionsInIfStatement(element) {
     if (!isIfStatement(element)) throw Error('This is not a if statement in getListOfCalledFunctionsInIfStatement');
 
     return await this.getListOfCalledFunctions(element.consequent.body);
   }
 
-  async getListOfCalledFunctionsInBlockStatement (element) {
+  async getListOfCalledFunctionsInBlockStatement(element) {
     if (!isBlockStatement(element)) throw Error('This is not a block statement in getListOfCalledFunctionsInBlockStatement');
 
     return await this.getListOfCalledFunctions(element.body);
   }
 
-  async getListOfCalledFunctionsInFunctionAst (functionElement) {
+  async getListOfCalledFunctionsInNewExpression(element) {
+    if (!isNewExpression(element)) throw Error('This is not a new expression in getListOfCalledFunctionsInNewExpression');
+
+    return await this.getListOfCalledFunctions(element.arguments);
+  }
+
+  async getListOfCalledFunctionsInUnaryExpression(element) {
+    if (!isUnaryExpression(element)) throw Error('This is not a unary expression in getListOfCalledFunctionsInUnaryExpression');
+
+    return await this.getListOfCalledFunctions([element.argument]);
+  }
+
+  async getListOfCalledFunctionsInFunctionAst(functionElement) {
     let body;
     if (isEs6Function(functionElement)) {
       body = functionElement.declarations[0].init.body;

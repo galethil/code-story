@@ -1,3 +1,11 @@
+// COMMON
+
+const isIterable = (element) => {
+  if (element == null) return false;
+
+  return typeof element[Symbol.iterator] === 'function';
+}
+
 // GENERAL
 
 const isCallExpression = (element) => (element.type === 'CallExpression');
@@ -20,6 +28,9 @@ const isMemberExpression = (element) => (element.type === 'MemberExpression');
 const isTryStatement = (element) => (element.type === 'TryStatement');
 const isCatchClause = (element) => (element.type === 'CatchClause');
 const isThrowStatement = (element) => (element.type === 'ThrowStatement');
+const isNewExpression = (element) => (element.type === 'NewExpression');
+const isUnaryExpression = (element) => (element.type === 'UnaryExpression');
+
 
 
 // EXPORTS
@@ -121,6 +132,7 @@ const isImport = (element) => (
 
 
 module.exports = {
+  isIterable,
   hasArguments,
   isCallExpression,
   isAwaitExpression,
@@ -142,6 +154,8 @@ module.exports = {
   isTemplateLiteral,
   isReturnStatement,
   isMemberExpression,
+  isNewExpression,
+  isUnaryExpression,
   isEs6Function,
   isClassicFunction,
   isNamedEs6Function,

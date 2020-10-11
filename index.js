@@ -1,19 +1,12 @@
 const parser = require('@babel/parser');
 const fs = require('fs');
 
+const { text } = require('./helpers/output');
 const { isNamedFunction } = require('./helpers/questions');
 const { setImport, setOptions, getFileImports, getImportVariablesNames, getFormattedImports, getListOfCalledFunctionsInFunction, getFunctionFromProgramBody } = require('./helpers/readers');
 const FileHandler = require('./helpers/fileHandler');
 
 let storyTemplate;
-
-const getAst = (file) => {
-  const text = fs.readFileSync(file, 'utf8');
-
-  const ast = parser.parse(text, {sourceType: 'module'});
-
-  return ast;
-};
 
 const describeFunction = async (file, functionName) => {
   const functionFile = new FileHandler(file, storyTemplate);
@@ -30,17 +23,31 @@ const functionStory = async () => {
   return await describeFunction(file, name);
 };
 
+
+class Output {
+  constructor(story) {
+    this.story = story;
+    this.raw = () => this.story;
+    this.text = () => text(this.story);
+  }
+}
+
 const codeStory = async (storyTemplateInput) => {
   storyTemplate = storyTemplateInput;
 
   const { type } = storyTemplate;
 
+  let story;
+
   switch (type) {
     case 'functionStory':
-      return await functionStory();
+      story = await functionStory();
+      break;
     default:
       throw Error('This type of story is not defined');
   }
+
+  return new Output(story);
 };
 
 module.exports = codeStory;
