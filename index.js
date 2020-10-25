@@ -27,8 +27,21 @@ const functionStory = async () => {
 class Output {
   constructor(story) {
     this.story = story;
-    this.raw = () => this.story;
-    this.text = () => text(this.story);
+    this.filteredStory = story;
+    this.filter = (condition, stories = this.filteredStory) => {
+      stories.forEach(storyLine => {
+        if (!condition(storyLine)) {
+          storyLine.filteredOut = true;
+        }
+        if (storyLine.import && storyLine.import.functions) {
+          this.filter(condition, storyLine.import.functions);
+        }
+      });
+
+      return this;
+    };
+    this.raw = () => this.filteredStory;
+    this.text = () => text(this.filteredStory);
   }
 }
 

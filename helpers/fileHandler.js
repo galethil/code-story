@@ -20,6 +20,7 @@ const {
   isLogicalExpression,
   isConditionalExpression,
   isBinaryExpression,
+  isNumericLiteral,
   isEs6Function,
   isClassicFunction,
   isTryStatement,
@@ -92,7 +93,8 @@ class FileHandler {
 
   getFormattedName(element) {
     const formatted = {
-      loc: element.loc
+      loc: element.loc,
+      file: this.file
     };
     if (element.callee && element.callee.name) {
       formatted.name = element.callee.name;
@@ -118,7 +120,8 @@ class FileHandler {
 
   async getFormattedCalledFunction(element) {
     const formattedFunc = {
-      loc: element.loc
+      loc: element.loc,
+      file: this.file
     };
     if (isCallExpression(element)) {
       formattedFunc.type = 'CallExpression';
@@ -181,7 +184,7 @@ class FileHandler {
     let listOfCalledFunctions = [];
 
     if (!isIterable(elements)) {
-      console.log('Non iterable elements');
+      // console.log('Non iterable elements');
 
       return listOfCalledFunctions;
     }
@@ -242,6 +245,8 @@ class FileHandler {
         listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInConditionalExpression(bodyElement));
       } else if (isBinaryExpression(bodyElement)) {
         listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInBinaryExpression(bodyElement));
+      } else if (isNumericLiteral(bodyElement)) {
+        // nothing to do with string literal
       } else {
         console.log('Type not defined', bodyElement.type);
       }

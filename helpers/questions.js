@@ -37,6 +37,9 @@ const isLogicalExpression = (element) => (element.type === 'LogicalExpression');
 const isConditionalExpression = (element) => (element.type === 'ConditionalExpression');
 // left === right
 const isBinaryExpression = (element) => (element.type === 'BinaryExpression');
+// 112
+const isNumericLiteral = (element) => (element.type === 'NumericLiteral');
+
 
 
 // EXPORTS
@@ -165,6 +168,7 @@ module.exports = {
   isLogicalExpression,
   isConditionalExpression,
   isBinaryExpression,
+  isNumericLiteral,
   isEs6Function,
   isClassicFunction,
   isNamedEs6Function,
