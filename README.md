@@ -1,5 +1,8 @@
 # code-story
 
+Library that understands your code and can generate formatted structure of your code,
+that can be used for documentation, code generators or different validations of code.
+
 ```javascript
 
 const codeStory = require('code-story');
@@ -17,9 +20,26 @@ const functionStoryTemplate = {
 const func = async () => {
   const story = await codeStory(functionStoryTemplate);
 
-  console.log(story);
+  console.log(story.raw());
 };
 
 func();
 
+```
+
+## Outputs
+
+There are 2 types ou outputs:
+
+* `.raw()` - will output array with all the details you can use in your application
+* `.text()` - will output simple text output
+
+## Filtering
+
+In the output you can user custom filtering with `.filter()`. E.g. if I want to display only Throw statements
+
+```javascript
+const story = await codeStory(functionStoryTemplate);
+
+const filteredOutput = story.filter(storyLine => storyLine.type === 'ThrowStatement').text();
 ```
