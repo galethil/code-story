@@ -27,10 +27,16 @@ const isReturnStatement = (element) => (element.type === 'ReturnStatement');
 const isMemberExpression = (element) => (element.type === 'MemberExpression');
 const isTryStatement = (element) => (element.type === 'TryStatement');
 const isCatchClause = (element) => (element.type === 'CatchClause');
+// throw Error('my error')
 const isThrowStatement = (element) => (element.type === 'ThrowStatement');
 const isNewExpression = (element) => (element.type === 'NewExpression');
 const isUnaryExpression = (element) => (element.type === 'UnaryExpression');
-
+// left && right
+const isLogicalExpression = (element) => (element.type === 'LogicalExpression');
+// test ? consequent : alternate
+const isConditionalExpression = (element) => (element.type === 'ConditionalExpression');
+// left === right
+const isBinaryExpression = (element) => (element.type === 'BinaryExpression');
 
 
 // EXPORTS
@@ -156,6 +162,9 @@ module.exports = {
   isMemberExpression,
   isNewExpression,
   isUnaryExpression,
+  isLogicalExpression,
+  isConditionalExpression,
+  isBinaryExpression,
   isEs6Function,
   isClassicFunction,
   isNamedEs6Function,

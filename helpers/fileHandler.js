@@ -17,6 +17,9 @@ const {
   isMemberExpression,
   isNewExpression,
   isUnaryExpression,
+  isLogicalExpression,
+  isConditionalExpression,
+  isBinaryExpression,
   isEs6Function,
   isClassicFunction,
   isTryStatement,
@@ -232,8 +235,13 @@ class FileHandler {
       } else if (isRegExpLiteral(bodyElement)) {
         // nothing to do with string literal
       } else if (isUnaryExpression(bodyElement)) {
-        // nothing to do with string literal
         listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInUnaryExpression(bodyElement));
+      } else if (isLogicalExpression(bodyElement)) {
+        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInLogicalExpression(bodyElement));
+      } else if (isConditionalExpression(bodyElement)) {
+        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInConditionalExpression(bodyElement));
+      } else if (isBinaryExpression(bodyElement)) {
+        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInBinaryExpression(bodyElement));
       } else {
         console.log('Type not defined', bodyElement.type);
       }
@@ -351,6 +359,35 @@ class FileHandler {
 
     return await this.getListOfCalledFunctions([element.argument]);
   }
+
+  async getListOfCalledFunctionsInLogicalExpression(element) {
+    if (!isLogicalExpression(element)) throw Error('This is not a logical expression in getListOfCalledFunctionsInLogicalExpression');
+
+    let listOfCalledFunctions = await this.getListOfCalledFunctions([element.left]);
+    listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions([element.right]));
+
+    return listOfCalledFunctions;
+  }
+
+  async getListOfCalledFunctionsInConditionalExpression(element) {
+    if (!isConditionalExpression(element)) throw Error('This is not a conditional expression in getListOfCalledFunctionsInConditionalExpression');
+
+    let listOfCalledFunctions = await this.getListOfCalledFunctions([element.test]);
+    listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions([element.consequent]));
+    listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions([element.alternate]));
+
+    return listOfCalledFunctions;
+  }
+
+  async getListOfCalledFunctionsInBinaryExpression(element) {
+    if (!isBinaryExpression(element)) throw Error('This is not a binary expression in getListOfCalledFunctionsInBinaryExpression');
+
+    let listOfCalledFunctions = await this.getListOfCalledFunctions([element.left]);
+    listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions([element.right]));
+
+    return listOfCalledFunctions;
+  }
+
 
   async getListOfCalledFunctionsInFunctionAst(functionElement) {
     let body;
