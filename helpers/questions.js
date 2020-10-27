@@ -1,3 +1,32 @@
+const {
+  CallExpression,
+  AwaitExpression,
+  Identifier,
+  ExpressionStatement,
+  AssignmentExpression,
+  BlockStatement,
+  VariableDeclaration,
+  VariableDeclarator,
+  ArrayExpression,
+  ObjectExpression,
+  StringLiteral,
+  RegExpLiteral,
+  TemplateLiteral,
+  ArrowFunctionExpression,
+  IfStatement,
+  ReturnStatement,
+  MemberExpression,
+  TryStatement,
+  CatchClause,
+  ThrowStatement,
+  NewExpression,
+  UnaryExpression,
+  LogicalExpression,
+  ConditionalExpression,
+  BinaryExpression,
+  NumericLiteral,
+  CommentBlock
+} = require('./constants');
 // COMMON
 
 const isIterable = (element) => {
@@ -8,39 +37,39 @@ const isIterable = (element) => {
 
 // GENERAL
 
-const isCallExpression = (element) => (element.type === 'CallExpression');
-const isAwaitExpression = (element) => (element.type === 'AwaitExpression');
-const isIdentifier = (element) => (element.type === 'Identifier');
-const isExpressionStatement = (element) => (element.type === 'ExpressionStatement');
-const isAssignmentExpression = (element) => (element.type === 'AssignmentExpression');
-const isBlockStatement = (element) => (element.type === 'BlockStatement');
-const isVariableDeclaration = (element) => (element.type === 'VariableDeclaration');
-const isVariableDeclarator = (element) => (element.type === 'VariableDeclarator');
-const isArrayExpression = (element) => (element.type === 'ArrayExpression');
-const isObjectExpression = (element) => (element.type === 'ObjectExpression');
-const isStringLiteral = (element) => (element.type === 'StringLiteral');
-const isRegExpLiteral = (element) => (element.type === 'RegExpLiteral');
-const isTemplateLiteral = (element) => (element.type === 'TemplateLiteral');
-const isArrowFunctionExpression = (element) => (element.type === 'ArrowFunctionExpression');
-const isIfStatement = (element) => (element.type === 'IfStatement');
-const isReturnStatement = (element) => (element.type === 'ReturnStatement');
-const isMemberExpression = (element) => (element.type === 'MemberExpression');
-const isTryStatement = (element) => (element.type === 'TryStatement');
-const isCatchClause = (element) => (element.type === 'CatchClause');
+const isCallExpression = (element) => (element.type === CallExpression);
+const isAwaitExpression = (element) => (element.type === AwaitExpression);
+const isIdentifier = (element) => (element.type === Identifier);
+const isExpressionStatement = (element) => (element.type === ExpressionStatement);
+const isAssignmentExpression = (element) => (element.type === AssignmentExpression);
+const isBlockStatement = (element) => (element.type === BlockStatement);
+const isVariableDeclaration = (element) => (element.type === VariableDeclaration);
+const isVariableDeclarator = (element) => (element.type === VariableDeclarator);
+const isArrayExpression = (element) => (element.type === ArrayExpression);
+const isObjectExpression = (element) => (element.type === ObjectExpression);
+const isStringLiteral = (element) => (element.type === StringLiteral);
+const isRegExpLiteral = (element) => (element.type === RegExpLiteral);
+const isTemplateLiteral = (element) => (element.type === TemplateLiteral);
+const isArrowFunctionExpression = (element) => (element.type === ArrowFunctionExpression);
+const isIfStatement = (element) => (element.type === IfStatement);
+const isReturnStatement = (element) => (element.type === ReturnStatement);
+const isMemberExpression = (element) => (element.type === MemberExpression);
+const isTryStatement = (element) => (element.type === TryStatement);
+const isCatchClause = (element) => (element.type === CatchClause);
 // throw Error('my error')
-const isThrowStatement = (element) => (element.type === 'ThrowStatement');
-const isNewExpression = (element) => (element.type === 'NewExpression');
-const isUnaryExpression = (element) => (element.type === 'UnaryExpression');
+const isThrowStatement = (element) => (element.type === ThrowStatement);
+const isNewExpression = (element) => (element.type === NewExpression);
+const isUnaryExpression = (element) => (element.type === UnaryExpression);
 // left && right
-const isLogicalExpression = (element) => (element.type === 'LogicalExpression');
+const isLogicalExpression = (element) => (element.type === LogicalExpression);
 // test ? consequent : alternate
-const isConditionalExpression = (element) => (element.type === 'ConditionalExpression');
+const isConditionalExpression = (element) => (element.type === ConditionalExpression);
 // left === right
-const isBinaryExpression = (element) => (element.type === 'BinaryExpression');
+const isBinaryExpression = (element) => (element.type === BinaryExpression);
 // 112
-const isNumericLiteral = (element) => (element.type === 'NumericLiteral');
+const isNumericLiteral = (element) => (element.type === NumericLiteral);
 // /* comment */
-const isCommentBlock = (element) => (element.type === 'CommentBlock');
+const isCommentBlock = (element) => (element.type === CommentBlock);
 
 const hasLeadingComments = (element) => (typeof element.leadingComments !== 'undefined');
 const hasTrailingComments = (element) => (typeof element.trailingComments !== 'undefined');

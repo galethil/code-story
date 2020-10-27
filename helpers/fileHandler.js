@@ -1,3 +1,4 @@
+const { StringLiteral, MemberExpression, BooleanLiteral, NumericLiteral, TemplateLiteral, Identifier } = require('./constants');
 const { getAst, getFileFromImport } = require('./loaders');
 const {
   isIterable,
@@ -113,10 +114,63 @@ class FileHandler {
     return formatted;
   }
 
+  getFormattedArguments(elements) {
+    return elements.map(element => this.getFormattedArgument(element));
+  }
+
+  getFormattedArgument(element) {
+    const { type, value, object, property } = element;
+    switch (type) {
+      case StringLiteral:
+        return {
+          type,
+          value
+        };
+      case MemberExpression:
+        if (object && property && object.type === Identifier && property.type === Identifier) {
+          return {
+            type,
+            name: `${object.name}.${property.name}`,
+            value: `${object.name}.${property.name}`,
+            object: {
+              name: object.name
+            },
+            property: {
+              name: property.name
+            }
+          };
+        }
+      break;
+      case BooleanLiteral:
+        return {
+          type,
+          value
+        };
+      case NumericLiteral:
+        return {
+          type,
+          value
+        };
+      case TemplateLiteral:
+        return {
+          type,
+          value
+        };
+      default:
+        return {
+          type
+        };
+    }
+  }
+
   async getFormattedThrowStatement(element) {
     const formatted = this.getFormattedName(element);
     if (isThrowStatement(element)) {
       formatted.type = 'ThrowStatement';
+
+      if (element.argument && element.argument.arguments) {
+        formatted.arguments = this.getFormattedArguments(element.argument.arguments);
+      }
     }
     return formatted;
   }

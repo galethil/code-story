@@ -28,6 +28,24 @@ class Output {
   constructor(story) {
     this.story = story;
     this.filteredStory = story;
+    this.isFlat = false;
+    this.flat = () => {
+      const flatLoop = (elements) => {
+        const flatElements = [];
+        elements.forEach(storyLine => {
+          flatElements.push(storyLine);
+          if (storyLine.import && storyLine.import.functions) {
+            flatElements.push(...flatLoop(storyLine.import.functions.elements));
+            delete storyLine.import.functions;
+          }
+        });
+
+        return flatElements;
+      };
+      this.filteredStory.elements = flatLoop(this.filteredStory.elements);
+
+      return this;
+    };
     this.filter = (condition, stories = this.filteredStory) => {
       stories.elements.forEach(storyLine => {
         if (!condition(storyLine)) {

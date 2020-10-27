@@ -14,7 +14,7 @@ const text = (codeStory, spacing = 0) => {
       finalText += `${spaces}${storyLine.name}`;
 
       if (isThrowStatement(storyLine)) {
-        finalText += ` [throw]`;
+        finalText += ` [throw with arguments: ${storyLine.arguments.map(arg => arg.value).join(', ')}]`;
       }
 
       if (storyLine.import && storyLine.import.functions && storyLine.import.functions.jsDoc) {

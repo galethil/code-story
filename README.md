@@ -43,3 +43,13 @@ const story = await codeStory(functionStoryTemplate);
 
 const filteredOutput = story.filter(storyLine => storyLine.type === 'ThrowStatement').text();
 ```
+
+## Flat
+
+As a standard way of output structured list is produced. If you need a simple list, you can flatten the output using `.flat()` method.
+
+```javascript
+const story = await codeStory(functionStoryTemplate);
+
+const filteredOutput = story.flat().text();
+```
