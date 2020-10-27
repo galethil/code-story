@@ -3,7 +3,7 @@ const readJsDoc = (commentValue) => {
   const matches = commentValue.match(tagRegex);
   const jsDocArray = [];
 
-  // console.log(matches.groups);
+  if (!matches) return [];
 
   for (const match of matches) {
    const jsDocLineRegex = /@(\w+)(\ {(\w+)})? ([\w\d ]+)/i;

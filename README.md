@@ -29,10 +29,11 @@ func();
 
 ## Outputs
 
-There are 2 types ou outputs:
+There are 3 types of outputs:
 
 * `.raw()` - will output array with all the details you can use in your application
 * `.text()` - will output simple text output
+* `.output(storyLine => storyline.name)` - custom output that will format lines using defined function
 
 ## Filtering
 

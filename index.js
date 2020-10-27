@@ -1,9 +1,8 @@
 const parser = require('@babel/parser');
 const fs = require('fs');
 
-const { text } = require('./helpers/output');
+const { text, custom } = require('./helpers/output');
 const { isNamedFunction } = require('./helpers/questions');
-const { setImport, setOptions, getFileImports, getImportVariablesNames, getFormattedImports, getListOfCalledFunctionsInFunction, getFunctionFromProgramBody } = require('./helpers/readers');
 const FileHandler = require('./helpers/fileHandler');
 
 let storyTemplate;
@@ -26,12 +25,30 @@ const functionStory = async () => {
 
 class Output {
   constructor(story) {
+    this.filter = (condition, stories = this.filteredStory) => {
+      if (!stories.elements) return this;
+      stories.elements.forEach((storyLine, index) => {
+        if (!storyLine) delete stories.elements[index];
+        if (!condition(storyLine)) {
+          storyLine.filteredOut = true;
+        }
+        if (storyLine.import && storyLine.import.functions) {
+          this.filter(condition, storyLine.import.functions);
+        }
+      });
+
+      return this;
+    };
     this.story = story;
-    this.filteredStory = story;
+    this.filteredStory = this.story;
+    this.filter(element => element && element.name);
+
     this.isFlat = false;
+
     this.flat = () => {
       const flatLoop = (elements) => {
         const flatElements = [];
+        if (!elements) return flatElements;
         elements.forEach(storyLine => {
           flatElements.push(storyLine);
           if (storyLine.import && storyLine.import.functions) {
@@ -46,20 +63,9 @@ class Output {
 
       return this;
     };
-    this.filter = (condition, stories = this.filteredStory) => {
-      stories.elements.forEach(storyLine => {
-        if (!condition(storyLine)) {
-          storyLine.filteredOut = true;
-        }
-        if (storyLine.import && storyLine.import.functions) {
-          this.filter(condition, storyLine.import.functions);
-        }
-      });
-
-      return this;
-    };
     this.raw = () => this.filteredStory;
     this.text = () => text(this.filteredStory);
+    this.output = (customFormatterFunction) => custom(this.filteredStory, customFormatterFunction);
   }
 }
 

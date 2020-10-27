@@ -87,9 +87,10 @@ class FileHandler {
   async getListOfCalledFunctionsInFunction(functionName) {
     const functionAst = this.getFunctionFromProgramBody(functionName);
     const calledFunctions = await this.getListOfCalledFunctionsInFunctionAst(functionAst);
+    const jsDoc = functionAst && functionAst.jsDoc ? functionAst.jsDoc : undefined;
     return {
       elements: calledFunctions,
-      jsDoc: functionAst.jsDoc
+      jsDoc
     };
   }
 
@@ -451,13 +452,15 @@ class FileHandler {
 
 
   async getListOfCalledFunctionsInFunctionAst(functionElement) {
+    if (!functionElement) return [];
     let body;
     if (isEs6Function(functionElement)) {
       body = functionElement.declarations[0].init.body;
     } else if (isClassicFunction(functionElement)) {
       body = functionElement.body;
     }
-    body.jsDoc = functionElement.jsDoc;
+    // adding jsDoc
+    if (functionElement && functionElement.jsDoc) body.jsDoc = functionElement.jsDoc;
 
     return await this.getListOfCalledFunctionsInBlockStatement(body);
   }

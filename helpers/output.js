@@ -39,11 +39,34 @@ const text = (codeStory, spacing = 0) => {
       finalText += text(storyLine.import.functions, spacing + 1);
     }
 
-  };
+  }
 
   return finalText;
-}
+};
+
+const custom = (codeStory, formattingFunction) => {
+  const formattedElements = codeStory.elements.filter(storyLine => {
+    if (!storyLine) return false;
+    if (!storyLine.name) return false;
+    if (storyLine.filteredOut) return false;
+
+    return true;
+  }).map(storyLine => {
+    if (storyLine.import && storyLine.import.functions) {
+      storyLine.import.functions = custom(storyLine.import.functions, formattingFunction);
+    }
+
+    return formattingFunction(storyLine);
+
+  });
+
+  return {
+    ...codeStory,
+    elements: formattedElements
+  };
+};
 
 module.exports = {
-  text
+  text,
+  custom
 }
