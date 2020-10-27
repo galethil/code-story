@@ -1,30 +1,16 @@
 const path = require('path');
 const {
-  hasArguments,
-  isReturnStatement,
-  isCallExpression,
-  isAwaitExpression,
-  isIdentifier,
-  isExpressionStatement,
-  isAssignmentExpression,
-  isBlockStatement,
-  isVariableDeclaration,
-  isVariableDeclarator,
-  isArrayExpression,
-  isIfStatement,
-  isArrowFunctionExpression,
-  isMemberExpression,
-  isEs6Function,
-  isClassicFunction,
+  hasLeadingComments,
+  isJsDoc,
   isNamedClassicFunction,
   isNamedEs6Function,
-  isNamedFunction,
   isImport,
   isImportTypeImport,
   isRequireTypeImport,
   isMultiVariableImport,
   isLocalPath
 } = require('./questions');
+const { readJsDoc } = require('./jsDoc');
 
 
 // FUNCTIONS
@@ -40,13 +26,21 @@ const getMethodOrFunctionName = (name, importDefinition) => {
 };
 
 const getFunctionFromProgramBody = (body, functionName) => {
-  return body.find((element, index) => {
-    if (isNamedClassicFunction(element, functionName)) {
-      return element;
-    } else if (isNamedEs6Function(element, functionName)) {
-      return element;
+  const foundElement = body.find((element) => {
+    if (isNamedClassicFunction(element, functionName) || isNamedEs6Function(element, functionName)) {
+      return true;
     }
   });
+
+  let jsDoc;
+  if (hasLeadingComments(foundElement)) {
+    if (isJsDoc(foundElement.leadingComments)) {
+      const jsDocText = foundElement.leadingComments.map(comment => comment.value).join('\n');
+      jsDoc = readJsDoc(jsDocText);
+      foundElement.jsDoc = jsDoc;
+    }
+  }
+  return foundElement;
 };
 
 // IMPORTS

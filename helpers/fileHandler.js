@@ -85,8 +85,11 @@ class FileHandler {
 
   async getListOfCalledFunctionsInFunction(functionName) {
     const functionAst = this.getFunctionFromProgramBody(functionName);
-
-    return await this.getListOfCalledFunctionsInFunctionAst(functionAst);
+    const calledFunctions = await this.getListOfCalledFunctionsInFunctionAst(functionAst);
+    return {
+      elements: calledFunctions,
+      jsDoc: functionAst.jsDoc
+    };
   }
 
   // FORMATTED OUTPUTS
@@ -190,7 +193,6 @@ class FileHandler {
     }
     // elements.forEach((bodyElement, index) => {
     for (const bodyElement of elements) {
-
       if (isCallExpression(bodyElement)) {
         listOfCalledFunctions.push(await this.getFormattedCalledFunction(bodyElement));
 
@@ -401,6 +403,7 @@ class FileHandler {
     } else if (isClassicFunction(functionElement)) {
       body = functionElement.body;
     }
+    body.jsDoc = functionElement.jsDoc;
 
     return await this.getListOfCalledFunctionsInBlockStatement(body);
   }

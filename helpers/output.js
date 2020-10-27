@@ -3,7 +3,7 @@ const { isCallExpression, isThrowStatement } = require('./questions');
 const text = (codeStory, spacing = 0) => {
   let finalText = '';
 
-  for (const storyLine of codeStory) {
+  for (const storyLine of codeStory.elements) {
     if (!storyLine.name) continue;
     if (!storyLine.filteredOut) {
       let spaces = '';
@@ -14,7 +14,15 @@ const text = (codeStory, spacing = 0) => {
       finalText += `${spaces}${storyLine.name}`;
 
       if (isThrowStatement(storyLine)) {
-        finalText += `[throw]`;
+        finalText += ` [throw]`;
+      }
+
+      if (storyLine.import && storyLine.import.functions && storyLine.import.functions.jsDoc) {
+        const { jsDoc } = storyLine.import.functions;
+        const summary = jsDoc.find(line => line.tag === 'summary');
+        const description = jsDoc.find(line => line.tag === 'description');
+        const summaryOrDescription = summary || description || {value: ''};
+        finalText += ` - ${summaryOrDescription.value}`;
       }
 
       // if (storyLine.import) {

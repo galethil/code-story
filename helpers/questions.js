@@ -39,8 +39,18 @@ const isConditionalExpression = (element) => (element.type === 'ConditionalExpre
 const isBinaryExpression = (element) => (element.type === 'BinaryExpression');
 // 112
 const isNumericLiteral = (element) => (element.type === 'NumericLiteral');
+// /* comment */
+const isCommentBlock = (element) => (element.type === 'CommentBlock');
 
-
+const hasLeadingComments = (element) => (typeof element.leadingComments !== 'undefined');
+const hasTrailingComments = (element) => (typeof element.trailingComments !== 'undefined');
+const isJsDoc = (elements) => {
+  const potentialJsDocs = Array.isArray(elements) ? elements : [elements];
+  const jsDocComments = potentialJsDocs.find(element => {
+    return isCommentBlock(element) && element.value.includes('*\n') && element.value.match(/\@\w+/gmi);
+  });
+  return (jsDocComments);
+};
 
 // EXPORTS
 
@@ -169,6 +179,9 @@ module.exports = {
   isConditionalExpression,
   isBinaryExpression,
   isNumericLiteral,
+  hasLeadingComments,
+  hasTrailingComments,
+  isJsDoc,
   isEs6Function,
   isClassicFunction,
   isNamedEs6Function,

@@ -29,7 +29,7 @@ class Output {
     this.story = story;
     this.filteredStory = story;
     this.filter = (condition, stories = this.filteredStory) => {
-      stories.forEach(storyLine => {
+      stories.elements.forEach(storyLine => {
         if (!condition(storyLine)) {
           storyLine.filteredOut = true;
         }
