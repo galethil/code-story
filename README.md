@@ -1,6 +1,6 @@
 # code-story
 
-Library that understands your code and can generate formatted structure of your code,
+Library that understands your javascript code and can generate formatted structure of your code,
 that can be used for documentation, code generators or different validations of code.
 
 ```javascript
@@ -11,7 +11,7 @@ const codeStory = require('code-story');
 const functionStoryTemplate = {
   type: 'functionStory',
   name: 'getAllUsers',
-  file: './server/modules/users/users.handler.js',
+  file: './src/modules/users/users.handler.js',
   followImports: true,
   followFunctions: true,
   followImportsDeptLevel: 2
@@ -35,16 +35,6 @@ There are 3 types of outputs:
 * `.text()` - will output simple text output
 * `.output(storyLine => storyline.name)` - custom output that will format lines using defined function
 
-## Filtering
-
-In the output you can user custom filtering with `.filter()`. E.g. if I want to display only Throw statements
-
-```javascript
-const story = await codeStory(functionStoryTemplate);
-
-const filteredOutput = story.filter(storyLine => storyLine.type === 'ThrowStatement').text();
-```
-
 ## Flat
 
 As a standard way of output structured list is produced. If you need a simple list, you can flatten the output using `.flat()` method.
@@ -54,3 +44,29 @@ const story = await codeStory(functionStoryTemplate);
 
 const filteredOutput = story.flat().text();
 ```
+
+## Filtering
+
+In the output you can user custom filtering with `.filter()`. E.g. if I want to display only Throw statements of only specific called functions.
+
+```javascript
+const story = await codeStory(functionStoryTemplate);
+// Filtering only throw statements
+const filteredOutput = story.filter(storyLine => storyLine.type === 'ThrowStatement').text();
+```
+
+```javascript
+const story = await codeStory(functionStoryTemplate);
+// Showing only first arguments of all `res.status` functions called
+const listOfStatuses = story
+  .flat()
+  .filter(
+    storyLine =>
+      storyLine.type === 'CallExpression'
+      && storyLine.name
+      && storyLine.name.includes('res.status')
+  ).output(storyLine => (storyLine.arguments[0].value))
+  .elements;
+```
+
+

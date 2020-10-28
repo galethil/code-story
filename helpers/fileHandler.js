@@ -233,6 +233,10 @@ class FileHandler {
       }
     }
 
+    if (element.arguments) {
+      formattedFunc.arguments = this.getFormattedArguments(element.arguments);
+    }
+
     return formattedFunc;
   }
 
