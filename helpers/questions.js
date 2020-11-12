@@ -1,4 +1,6 @@
 const {
+  FileType,
+  ProgramType,
   CallExpression,
   AwaitExpression,
   Identifier,
@@ -37,12 +39,15 @@ const isIterable = (element) => {
 
 // GENERAL
 
+const isFile = (element) => (element && element.type === FileType);
+const isProgram = (element) => (element && element.type === ProgramType);
 const isCallExpression = (element) => (element && element.type === CallExpression);
 const isAwaitExpression = (element) => (element && element.type === AwaitExpression);
 const isIdentifier = (element) => (element && element.type === Identifier);
 const isExpressionStatement = (element) => (element && element.type === ExpressionStatement);
 const isAssignmentExpression = (element) => (element && element.type === AssignmentExpression);
 const isBlockStatement = (element) => (element && element.type === BlockStatement);
+// const x = 1;
 const isVariableDeclaration = (element) => (element && element.type === VariableDeclaration);
 const isVariableDeclarator = (element) => (element && element.type === VariableDeclarator);
 const isArrayExpression = (element) => (element && element.type === ArrayExpression);
@@ -143,6 +148,16 @@ const isNamedFunction = (element, functionName) => {
   );
 };
 
+// VARIABLES
+
+const isNamedVariable = (element, variableName) => (
+  element && isVariableDeclaration(element) &&
+  element.declarations &&
+  element.declarations.id &&
+  element.declarations.id.name &&
+  element.declarations.id.name === variableName
+);
+
 // IMPORTS
 
 const isRequireTypeImport = (element) => {
@@ -221,6 +236,7 @@ module.exports = {
   isNamedClassicFunction,
   isFunction,
   isNamedFunction,
+  isNamedVariable,
   isRequireTypeImport,
   isImportTypeImport,
   isImport,

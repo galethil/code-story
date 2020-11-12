@@ -1,3 +1,5 @@
+const FileType = 'File';
+const ProgramType = 'Program';
 const CallExpression = 'CallExpression';
 const AwaitExpression = 'AwaitExpression';
 const Identifier = 'Identifier';
@@ -34,6 +36,8 @@ const NumericLiteral = 'NumericLiteral';
 const CommentBlock = 'CommentBlock';
 
 module.exports = {
+  FileType,
+  ProgramType,
   CallExpression,
   AwaitExpression,
   Identifier,

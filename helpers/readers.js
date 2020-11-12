@@ -4,6 +4,7 @@ const {
   isJsDoc,
   isNamedClassicFunction,
   isNamedEs6Function,
+  isNamedVariable,
   isImport,
   isImportTypeImport,
   isRequireTypeImport,
@@ -28,6 +29,25 @@ const getMethodOrFunctionName = (name, importDefinition) => {
 const getFunctionFromProgramBody = (body, functionName) => {
   const foundElement = body.find((element) => {
     if (isNamedClassicFunction(element, functionName) || isNamedEs6Function(element, functionName)) {
+      return true;
+    }
+  });
+
+  let jsDoc;
+  if (hasLeadingComments(foundElement)) {
+    if (isJsDoc(foundElement.leadingComments)) {
+      const jsDocText = foundElement.leadingComments.map(comment => comment.value).join('\n');
+      jsDoc = readJsDoc(jsDocText);
+      foundElement.jsDoc = jsDoc;
+    }
+  }
+  return foundElement;
+};
+
+const getVariableFromProgramBody = (body, variableName) => {
+  const foundElement = body.find((element) => {
+    if (isNamedVariable(element, variableName)) {
+      console.log('true', variableName, element.declarations);
       return true;
     }
   });
@@ -131,6 +151,7 @@ const getFormattedImports = (imports) => {
 
 module.exports = {
   getFunctionFromProgramBody,
+  getVariableFromProgramBody,
   getFileImports,
   getImportVariableName,
   getImportVariablesNames,
