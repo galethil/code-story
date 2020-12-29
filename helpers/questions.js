@@ -4,6 +4,7 @@ const {
   CallExpression,
   AwaitExpression,
   Identifier,
+  ImportNamespaceSpecifier,
   ExpressionStatement,
   AssignmentExpression,
   BlockStatement,
@@ -44,6 +45,7 @@ const isProgram = (element) => (element && element.type === ProgramType);
 const isCallExpression = (element) => (element && element.type === CallExpression);
 const isAwaitExpression = (element) => (element && element.type === AwaitExpression);
 const isIdentifier = (element) => (element && element.type === Identifier);
+const isImportNamespaceSpecifier = (element) => (element && element.type === ImportNamespaceSpecifier);
 const isExpressionStatement = (element) => (element && element.type === ExpressionStatement);
 const isAssignmentExpression = (element) => (element && element.type === AssignmentExpression);
 const isBlockStatement = (element) => (element && element.type === BlockStatement);
@@ -105,10 +107,21 @@ const isEs6Function = (element) => (
   element.declarations[0].init.type === 'ArrowFunctionExpression'
 );
 
+const isExportNamedDeclaration = (element) => (
+  element &&
+  element.type === 'ExportNamedDeclaration'
+);
+
 const isNamedEs6Function = (element, functionName) => (
   element &&
   isEs6Function(element) &&
   element.declarations[0].id.name === functionName
+);
+
+const isNamedExportNamedDeclaration = (element, functionName) => (
+  element &&
+  isExportNamedDeclaration(element) &&
+  element.declaration.id.name === functionName
 );
 
 // const isEs6SimpleFunction = (element) => (
@@ -199,11 +212,13 @@ const isImport = (element) => (
 
 
 module.exports = {
+  isProgram,
   isIterable,
   hasArguments,
   isCallExpression,
   isAwaitExpression,
   isIdentifier,
+  isImportNamespaceSpecifier,
   isExpressionStatement,
   isAssignmentExpression,
   isBlockStatement,
@@ -234,9 +249,11 @@ module.exports = {
   isClassicFunction,
   isNamedEs6Function,
   isNamedClassicFunction,
+  isNamedExportNamedDeclaration,
   isFunction,
   isNamedFunction,
   isNamedVariable,
+  isExportNamedDeclaration,
   isRequireTypeImport,
   isImportTypeImport,
   isImport,

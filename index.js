@@ -39,7 +39,6 @@ const describeFiles = async (path) => {
   const files = glob.sync(path);
   const retArray = [];
   for (const fileName of files) {
-    console.log(fileName);
     const functionFile = new FileHandler(fileName, storyTemplate);
     await functionFile.load();
 

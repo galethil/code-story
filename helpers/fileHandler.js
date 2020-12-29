@@ -1,6 +1,7 @@
 const { StringLiteral, MemberExpression, BooleanLiteral, NumericLiteral, TemplateLiteral, Identifier } = require('./constants');
 const { getAst, getFileFromImport } = require('./loaders');
 const {
+  isProgram,
   isIterable,
   hasArguments,
   isReturnStatement,
@@ -44,6 +45,7 @@ const {
   getFunctionFromProgramBody,
   getVariableFromProgramBody,
   getFormattedImportByActiveName,
+  getFormattedParamByActiveName,
   getMethodOrFunctionName,
   getFolderFromImport
 } = require('./readers');
@@ -63,6 +65,9 @@ class FileHandler {
 
   setOptions(options) {
     this.options = options;
+    if ('params' in options) {
+      this.setParams(options.params)
+    }
   }
 
   setImports(imports) {
@@ -75,12 +80,21 @@ class FileHandler {
     this.setImports(formattedImports);
   }
 
+  setParams(params) {
+    this.params = params;
+  }
+
   getAst() {
     return this.ast;
   }
 
   getFunctionFromProgramBody(functionName) {
-    const programBody = this.ast.program.body;
+    let programBody;
+    if (isProgram(this.ast)) {
+      programBody = this.ast.body;
+    } else {
+      programBody = this.ast.program.body;
+    }
 
     return getFunctionFromProgramBody(programBody, functionName);
   }
@@ -252,6 +266,12 @@ class FileHandler {
           }
         }
       }
+    }
+
+    const fromParams = getFormattedParamByActiveName(formattedFunc.variableName, this.params);
+
+    if (fromParams) {
+      console.log('from params');
     }
 
     if (element.arguments) {

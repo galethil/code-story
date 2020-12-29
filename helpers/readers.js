@@ -4,8 +4,12 @@ const {
   isJsDoc,
   isNamedClassicFunction,
   isNamedEs6Function,
+  isNamedExportNamedDeclaration,
   isNamedVariable,
+  isExportNamedDeclaration,
   isImport,
+  isIdentifier,
+  isImportNamespaceSpecifier,
   isImportTypeImport,
   isRequireTypeImport,
   isMultiVariableImport,
@@ -27,11 +31,19 @@ const getMethodOrFunctionName = (name, importDefinition) => {
 };
 
 const getFunctionFromProgramBody = (body, functionName) => {
-  const foundElement = body.find((element) => {
-    if (isNamedClassicFunction(element, functionName) || isNamedEs6Function(element, functionName)) {
+  let foundElement = body.find((element) => {
+    if (
+      isNamedClassicFunction(element, functionName) ||
+      isNamedEs6Function(element, functionName) ||
+      isNamedExportNamedDeclaration(element, functionName)
+    ) {
       return true;
     }
   });
+
+  if (isExportNamedDeclaration(foundElement)) {
+    foundElement = foundElement.declaration;
+  }
 
   let jsDoc;
   if (hasLeadingComments(foundElement)) {
@@ -41,6 +53,7 @@ const getFunctionFromProgramBody = (body, functionName) => {
       foundElement.jsDoc = jsDoc;
     }
   }
+
   return foundElement;
 };
 
@@ -77,8 +90,16 @@ const getFormattedImportByActiveName = (name, formattedImports) => {
   });
 };
 
+const getFormattedParamByActiveName = (name, formattedParams) => {
+  return formattedParams.find(paramItem => {
+    if (paramItem.paramName === name) {
+      return true;
+    }
+  });
+};
+
 const getFileImports = (ast) => {
-  const programBody = ast.program.body;
+  const programBody = ast.program ? ast.program.body : ast.body;
 
   // filter all imports
   return programBody.filter(element => isImport(element));
@@ -110,7 +131,22 @@ const getImportVariablesNames = (element, originalName = false) => {
   } else if (isImportTypeImport(element)) {
     return element.specifiers.map(specifier => {
       if (originalName) {
-        return specifier.imported.name;
+        // js
+        if (specifier.imported) {
+          return specifier.imported.name;
+        }
+
+        // ts
+        // import * as Name from 'library';
+        if (isIdentifier(specifier)) {
+          return specifier.local.name;
+        }
+        // import name from 'library'
+        if (isImportNamespaceSpecifier(specifier)) {
+          return specifier.local.name;
+        }
+
+
       } else {
         return specifier.local.name;
       }
@@ -133,6 +169,7 @@ const getFormattedImports = (imports) => {
     const activeNames = getImportVariablesNames(importElement, false);
     const importFrom = getImportImportedName(importElement);
     const isLocalImport = isLocalPath(importFrom);
+    // console.log('import', originalNames, activeNames, importFrom, isLocalImport);
 
     originalNames.forEach((originalName, index) => {
       formattedImports.push({
@@ -158,6 +195,7 @@ module.exports = {
   getImportImportedName,
   getFormattedImports,
   getFormattedImportByActiveName,
+  getFormattedParamByActiveName,
   getMethodOrFunctionName,
   getFolderFromImport
 };

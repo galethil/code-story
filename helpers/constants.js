@@ -3,6 +3,7 @@ const ProgramType = 'Program';
 const CallExpression = 'CallExpression';
 const AwaitExpression = 'AwaitExpression';
 const Identifier = 'Identifier';
+const ImportNamespaceSpecifier = 'ImportNamespaceSpecifier';
 const ExpressionStatement = 'ExpressionStatement';
 const AssignmentExpression = 'AssignmentExpression';
 const BlockStatement = 'BlockStatement';
@@ -41,6 +42,7 @@ module.exports = {
   CallExpression,
   AwaitExpression,
   Identifier,
+  ImportNamespaceSpecifier,
   ExpressionStatement,
   AssignmentExpression,
   BlockStatement,
