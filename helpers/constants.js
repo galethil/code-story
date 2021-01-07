@@ -11,6 +11,7 @@ const VariableDeclaration = 'VariableDeclaration';
 const VariableDeclarator = 'VariableDeclarator';
 const ArrayExpression = 'ArrayExpression';
 const ObjectExpression = 'ObjectExpression';
+const Property = 'Property';
 const StringLiteral = 'StringLiteral';
 const RegExpLiteral = 'RegExpLiteral';
 const TemplateLiteral = 'TemplateLiteral';
@@ -50,6 +51,7 @@ module.exports = {
   VariableDeclarator,
   ArrayExpression,
   ObjectExpression,
+  Property,
   StringLiteral,
   RegExpLiteral,
   TemplateLiteral,

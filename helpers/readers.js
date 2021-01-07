@@ -91,11 +91,19 @@ const getFormattedImportByActiveName = (name, formattedImports) => {
 };
 
 const getFormattedParamByActiveName = (name, formattedParams) => {
-  return formattedParams.find(paramItem => {
+  const foundParam = formattedParams.find(paramItem => {
     if (paramItem.paramName === name) {
       return true;
     }
   });
+  if (foundParam) {
+    return {
+      originalName: foundParam.paramName,
+      activeName: foundParam.paramName,
+      importFrom: foundParam.file,
+      isLocalImport: true
+    }
+  }
 };
 
 const getFileImports = (ast) => {

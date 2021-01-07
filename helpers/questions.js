@@ -12,6 +12,7 @@ const {
   VariableDeclarator,
   ArrayExpression,
   ObjectExpression,
+  Property,
   StringLiteral,
   RegExpLiteral,
   TemplateLiteral,
@@ -54,6 +55,7 @@ const isVariableDeclaration = (element) => (element && element.type === Variable
 const isVariableDeclarator = (element) => (element && element.type === VariableDeclarator);
 const isArrayExpression = (element) => (element && element.type === ArrayExpression);
 const isObjectExpression = (element) => (element && element.type === ObjectExpression);
+const isProperty = (element) => (element && element.type === Property);
 const isStringLiteral = (element) => (element && element.type === StringLiteral);
 const isRegExpLiteral = (element) => (element && element.type === RegExpLiteral);
 const isTemplateLiteral = (element) => (element && element.type === TemplateLiteral);
@@ -121,6 +123,8 @@ const isNamedEs6Function = (element, functionName) => (
 const isNamedExportNamedDeclaration = (element, functionName) => (
   element &&
   isExportNamedDeclaration(element) &&
+  element.declaration &&
+  element.declaration.id &&
   element.declaration.id.name === functionName
 );
 
@@ -228,6 +232,7 @@ module.exports = {
   isVariableDeclarator,
   isArrayExpression,
   isObjectExpression,
+  isProperty,
   isThrowStatement,
   isCatchClause,
   isTryStatement,
