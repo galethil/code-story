@@ -216,6 +216,7 @@ const isImport = (element) => (
 
 
 module.exports = {
+  isFile,
   isProgram,
   isIterable,
   hasArguments,

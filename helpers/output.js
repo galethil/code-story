@@ -1,9 +1,21 @@
-const { isCallExpression, isThrowStatement } = require('./questions');
+const { MemberExpression, Identifier } = require('./constants');
+const { isCallExpression, isThrowStatement, isIterable } = require('./questions');
+
+const simpleText = (text, spacing = 0) => {
+  let finalText = '';
+  for (let i = 0; i <= spacing; i++) {
+    finalText += '  ';
+  }
+  finalText += text;
+  finalText += "\n";
+
+  return finalText;
+};
 
 const text = (codeStory, spacing = 0) => {
   let finalText = '';
-
-  for (const storyLine of codeStory.elements) {
+  
+  for (const storyLine of codeStory) {
     if (!storyLine.name) continue;
     if (!storyLine.filteredOut) {
       let spaces = '';
@@ -37,6 +49,15 @@ const text = (codeStory, spacing = 0) => {
 
     if (storyLine.import && storyLine.import.functions) {
       finalText += text(storyLine.import.functions, spacing + 1);
+    }
+    const argumentsWithVariable = storyLine.arguments?.filter(argument => argument.type === MemberExpression || argument.type === Identifier);
+
+    if (Array.isArray(argumentsWithVariable)) 
+    for (const argument of argumentsWithVariable) {
+      finalText += simpleText(`-> Argument: ${argument.name}`, spacing + 1);
+      if (argument.import && argument.import.functions) {
+        finalText += text(argument.import.functions, spacing + 1);
+      }
     }
 
   }

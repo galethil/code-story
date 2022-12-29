@@ -1,6 +1,7 @@
 const { StringLiteral, MemberExpression, BooleanLiteral, NumericLiteral, TemplateLiteral, Identifier } = require('./constants');
 const { getAst, getFileFromImport } = require('./loaders');
 const {
+  isFile,
   isProgram,
   isIterable,
   hasArguments,
@@ -118,6 +119,9 @@ class FileHandler {
 
   async getListOfSpecificFunctionsCallsInFile(functionName) {
     const calledFunctions = await this.getListOfCalledFunctionsInAst(this.ast);
+    //console.log(this.ast, calledFunctions);
+
+    return calledFunctions;
   }
 
   async getDetailsOfVariable(variableName) {
@@ -151,12 +155,17 @@ class FileHandler {
     return formatted;
   }
 
-  getFormattedArguments(elements) {
-    return elements.map(element => this.getFormattedArgument(element));
+  async getFormattedArguments(elements) {
+    const formattedArguments = [];
+    for (const element of elements) {
+      const formattedArgument = await this.getFormattedArgument(element);
+      formattedArguments.push(formattedArgument);
+    }
+    return formattedArguments;
   }
 
-  getFormattedArgument(element) {
-    const { type, value, object, property } = element;
+  async getFormattedArgument(element) {
+    const { type, value, object, property, name } = element;
     switch (type) {
       case StringLiteral:
         return {
@@ -177,7 +186,7 @@ class FileHandler {
             }
           };
         }
-      break;
+        break;
       case BooleanLiteral:
         return {
           type,
@@ -193,6 +202,43 @@ class FileHandler {
           type,
           value
         };
+      case Identifier:
+        const fromImport = getFormattedImportByActiveName(name, this.imports);
+        const identifier = {
+          type
+        };
+        // found variable is from import
+        
+        if (fromImport) {
+          identifier.import = fromImport;
+          identifier.originalName = getMethodOrFunctionName(name, fromImport);
+          identifier.name = identifier.originalName;
+
+          // following the imports
+          if (this.options && this.options.followImports && (this.options.followImportsDeptLevel === undefined || (this.options.followImportsDeptLevel && this.options.followImportsDeptLevel !== 0))) {
+
+            if (fromImport.isLocalImport) {
+
+              const importLocalPath = `${getFolderFromImport(this.file)}/${fromImport.importFrom}`;
+              const filePath = await getFileFromImport(importLocalPath);
+              
+              if (filePath) {
+                const functionFile = new FileHandler(
+                  filePath,
+                  {
+                    ...this.options,
+                    followImportsDeptLevel: this.options.followImportsDeptLevel ? this.options.followImportsDeptLevel - 1 : this.options.followImportsDeptLevel
+                  }
+                );
+                await functionFile.load();
+
+                identifier.import.functions = await functionFile.getListOfSpecificFunctionsCallsInFile(identifier.originalName);
+              }
+            }
+          }
+        }
+
+        return identifier;
       default:
         return {
           type
@@ -206,7 +252,7 @@ class FileHandler {
       formatted.type = 'ThrowStatement';
 
       if (element.argument && element.argument.arguments) {
-        formatted.arguments = this.getFormattedArguments(element.argument.arguments);
+        formatted.arguments = await this.getFormattedArguments(element.argument.arguments);
       }
     }
     return formatted;
@@ -231,6 +277,7 @@ class FileHandler {
         console.log('propss', this.file, element.loc.start, element);
 
     if (isCallExpression(element)) {
+      //console.log(JSON.stringify(element, undefined, 2));
       formattedFunc.type = 'CallExpression';
       // e.g. foo();
       if (element.callee && element.callee.name) {
@@ -304,7 +351,7 @@ class FileHandler {
     }
 
     if (element.arguments) {
-      formattedFunc.arguments = this.getFormattedArguments(element.arguments);
+      formattedFunc.arguments = await this.getFormattedArguments(element.arguments);
     }
 
     return formattedFunc;
@@ -314,8 +361,11 @@ class FileHandler {
 
   async getListOfCalledFunctions(elements) {
     let listOfCalledFunctions = [];
-
-    if (!isIterable(elements)) {
+    if (isFile(elements)) {
+      return this.getListOfCalledFunctions(elements.program);
+    } else if (isProgram(elements)) {
+      return this.getListOfCalledFunctions(elements.body);
+    } else if (!isIterable(elements)) {
       // console.log('Non iterable elements');
 
       return listOfCalledFunctions;
@@ -325,7 +375,7 @@ class FileHandler {
       if (isCallExpression(bodyElement)) {
         // e.g. users.filter().map().format()
         if (bodyElement.callee && bodyElement.callee.object && bodyElement.callee.object.callee && bodyElement.callee.property && bodyElement.callee.property.name) {
-          console.log('bodyElement.callee.object.callee')
+          // console.log('bodyElement.callee.object.callee')
           // const chainedName = getChainedName(element);
           // formattedFunc.name = chainedName;
           // formattedFunc.variableName = element.callee.object.name;

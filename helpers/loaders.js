@@ -25,8 +25,9 @@ const getAst = async (file, currentLocation) => {
 };
 
 const getFileFromImport = async (path) => {
-  const jsFile = `${path}.js`;
-  const tsFile = `${path}.ts`;
+  const formattedPath = path.replace('/./','/');
+  const jsFile = `${formattedPath}.js`;
+  const tsFile = `${formattedPath}.ts`;
   if (fs.existsSync(jsFile)) {
     return jsFile;
   } else if (fs.existsSync(tsFile)) {

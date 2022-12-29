@@ -5,6 +5,7 @@ const glob = require('glob');
 const { text, custom } = require('./helpers/output');
 const { isNamedFunction } = require('./helpers/questions');
 const FileHandler = require('./helpers/fileHandler');
+const { MemberExpression, Identifier } = require('./helpers/constants');
 
 let storyTemplate;
 
@@ -22,7 +23,7 @@ const findUsages = async (file, functionName) => {
   await functionFile.load();
 
   const list = await functionFile.getListOfSpecificFunctionsCallsInFile(functionName);
-  console.log('list', list);
+  // console.log('list', list);
   return list;
 };
 
@@ -99,19 +100,36 @@ class Output {
 
     this.flat = () => {
       const flatLoop = (elements) => {
+        
         const flatElements = [];
         if (!elements) return flatElements;
         elements.forEach(storyLine => {
+          
           flatElements.push(storyLine);
           if (storyLine.import && storyLine.import.functions) {
-            flatElements.push(...flatLoop(storyLine.import.functions.elements));
+            flatElements.push(...flatLoop(storyLine.import.functions));
             delete storyLine.import.functions;
+          }
+          
+          // console.log('storyLine.arguments', storyLine.arguments);
+          if (storyLine.arguments) {
+            
+            for (const argument of storyLine.arguments) {
+              if (argument.type === MemberExpression || argument.type === Identifier) {
+                flatElements.push({...argument, import: undefined});
+              }
+              if (argument.import) {
+                flatElements.push(...flatLoop(argument.import.functions));
+              }
+            }
+            
+            storyLine.arguments = [];
           }
         });
 
         return flatElements;
       };
-      this.filteredStory.elements = flatLoop(this.filteredStory.elements);
+      this.filteredStory = flatLoop(this.filteredStory);
 
       return this;
     };

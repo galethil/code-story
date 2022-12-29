@@ -90,7 +90,7 @@ const getFormattedImportByActiveName = (name, formattedImports) => {
   });
 };
 
-const getFormattedParamByActiveName = (name, formattedParams) => {
+const getFormattedParamByActiveName = (name, formattedParams = []) => {
   const foundParam = formattedParams.find(paramItem => {
     if (paramItem.paramName === name) {
       return true;
