@@ -2,7 +2,7 @@ const parser = require('@babel/parser');
 const fs = require('fs');
 const glob = require('glob');
 
-const { text, custom } = require('./helpers/output');
+const { text, filteredOnly, custom } = require('./helpers/output');
 const { isNamedFunction } = require('./helpers/questions');
 const FileHandler = require('./helpers/fileHandler');
 const { MemberExpression, Identifier } = require('./helpers/constants');
@@ -79,8 +79,8 @@ const customStory = async () => {
 class Output {
   constructor(story) {
     this.filter = (condition, stories = this.filteredStory) => {
-      if (!stories.elements) return this;
-      stories.elements.forEach((storyLine, index) => {
+      const elements = Array.isArray(stories.elements) ? stories.elements : stories;
+      elements.forEach((storyLine, index) => {
         if (!storyLine) delete stories.elements[index];
         if (!condition(storyLine)) {
           storyLine.filteredOut = true;
@@ -111,7 +111,6 @@ class Output {
             delete storyLine.import.functions;
           }
           
-          // console.log('storyLine.arguments', storyLine.arguments);
           if (storyLine.arguments) {
             
             for (const argument of storyLine.arguments) {
@@ -120,20 +119,26 @@ class Output {
               }
               if (argument.import) {
                 flatElements.push(...flatLoop(argument.import.functions));
+                delete argument.import;
               }
             }
             
-            storyLine.arguments = [];
+            // storyLine.arguments = [];
           }
         });
 
         return flatElements;
       };
-      this.filteredStory = flatLoop(this.filteredStory);
+      if (this.filteredStory.elements) {
+        this.filteredStory.elements = flatLoop(this.filteredStory.elements);
+      } else {
+        this.filteredStory = flatLoop(this.filteredStory);
+      }
 
       return this;
     };
     this.raw = () => this.filteredStory;
+    this.filteredOnly = () => filteredOnly(this.filteredStory);
     this.text = () => text(this.filteredStory);
     this.output = (customFormatterFunction) => custom(this.filteredStory, customFormatterFunction);
   }

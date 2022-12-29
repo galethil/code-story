@@ -45,6 +45,7 @@ const {
   getImportVariablesNames,
   getFormattedImports,
   getFunctionFromProgramBody,
+  getFunctionCallFromProgramBody,
   getVariableFromProgramBody,
   getFormattedImportByActiveName,
   getFormattedParamByActiveName,
@@ -101,6 +102,17 @@ class FileHandler {
     return getFunctionFromProgramBody(programBody, functionName);
   }
 
+  getFunctionCallFromProgramBody(functionName) {
+    let programBody;
+    if (isProgram(this.ast)) {
+      programBody = this.ast.body;
+    } else {
+      programBody = this.ast.program.body;
+    }
+
+    return getFunctionCallFromProgramBody(programBody, functionName);
+  }
+
   getVariableFromProgramBody(variableName) {
     const programBody = this.ast.program.body;
 
@@ -109,7 +121,12 @@ class FileHandler {
 
   async getListOfCalledFunctionsInFunction(functionName) {
     const functionAst = this.getFunctionFromProgramBody(functionName);
-    const calledFunctions = await this.getListOfCalledFunctionsInFunctionAst(functionAst);
+    let calledFunctions = await this.getListOfCalledFunctionsInFunctionAst(functionAst);
+    if (calledFunctions.length === 0) {
+      const functionCallAst = this.getFunctionCallFromProgramBody(functionName);
+      
+      calledFunctions = await this.getListOfCalledFunctionsInAst(functionCallAst?.expression?.arguments);
+    }
     const jsDoc = functionAst && functionAst.jsDoc ? functionAst.jsDoc : undefined;
     return {
       elements: calledFunctions,

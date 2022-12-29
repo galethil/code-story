@@ -13,7 +13,9 @@ const {
   isImportTypeImport,
   isRequireTypeImport,
   isMultiVariableImport,
-  isLocalPath
+  isLocalPath,
+  isCallExpression,
+  isMemberExpression
 } = require('./questions');
 const { readJsDoc } = require('./jsDoc');
 
@@ -54,6 +56,37 @@ const getFunctionFromProgramBody = (body, functionName) => {
     }
   }
 
+  return foundElement;
+};
+
+const getFunctionCallFromProgramBody = (body, functionName) => {
+  let foundElement = body.find((element) => {
+    if (
+      isCallExpression(element) ||
+      (element.expression &&
+        isCallExpression(element.expression) &&
+        isMemberExpression(element?.expression?.callee) &&
+        `${element?.expression?.callee?.object?.name}.${element?.expression?.callee?.property?.name}` === functionName)
+    ) {
+      return true;
+    }
+  });
+
+  
+  
+  if (isExportNamedDeclaration(foundElement)) {
+    foundElement = foundElement.declaration;
+  }
+
+  let jsDoc;
+  if (hasLeadingComments(foundElement)) {
+    if (isJsDoc(foundElement.leadingComments)) {
+      const jsDocText = foundElement.leadingComments.map(comment => comment.value).join('\n');
+      jsDoc = readJsDoc(jsDocText);
+      foundElement.jsDoc = jsDoc;
+    }
+  }
+  
   return foundElement;
 };
 
@@ -196,6 +229,7 @@ const getFormattedImports = (imports) => {
 
 module.exports = {
   getFunctionFromProgramBody,
+  getFunctionCallFromProgramBody,
   getVariableFromProgramBody,
   getFileImports,
   getImportVariableName,
