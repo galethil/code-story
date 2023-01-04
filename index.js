@@ -95,12 +95,15 @@ class Output {
     this.story = story;
     this.filteredStory = this.story;
     this.filter(element => element && element.name);
-
+    
     this.isFlat = false;
 
     this.flat = () => {
       const flatLoop = (elements) => {
-        
+        // extract elements from object if neccesary
+        if (elements?.elements) {
+          elements = elements.elements;
+        }
         const flatElements = [];
         if (!elements) return flatElements;
         elements.forEach(storyLine => {
@@ -127,13 +130,12 @@ class Output {
           }
         });
 
+        //console.log(flatElements);
+
         return flatElements;
       };
-      if (this.filteredStory.elements) {
-        this.filteredStory.elements = flatLoop(this.filteredStory.elements);
-      } else {
-        this.filteredStory = flatLoop(this.filteredStory);
-      }
+
+      this.filteredStory = flatLoop(this.filteredStory);
 
       return this;
     };

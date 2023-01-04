@@ -29,7 +29,10 @@ const {
   ConditionalExpression,
   BinaryExpression,
   NumericLiteral,
-  CommentBlock
+  BooleanLiteral,
+  CommentBlock,
+  SpreadElement,
+  ObjectProperty
 } = require('./constants');
 // COMMON
 
@@ -77,8 +80,14 @@ const isConditionalExpression = (element) => (element && element.type === Condit
 const isBinaryExpression = (element) => (element && element.type === BinaryExpression);
 // 112
 const isNumericLiteral = (element) => (element && element.type === NumericLiteral);
+//
+const isBooleanLiteral = (element) => (element && element.type === BooleanLiteral);
 // /* comment */
 const isCommentBlock = (element) => (element && element.type === CommentBlock);
+// {...spread}}
+const isSpreadElement = (element) => (element && element.type === SpreadElement);
+// key:value
+const isObjectProperty = (element) => (element && element.type === ObjectProperty);
 
 const hasLeadingComments = (element) => (element && typeof element.leadingComments !== 'undefined');
 const hasTrailingComments = (element) => (element && typeof element.trailingComments !== 'undefined');
@@ -248,6 +257,9 @@ module.exports = {
   isConditionalExpression,
   isBinaryExpression,
   isNumericLiteral,
+  isBooleanLiteral,
+  isSpreadElement,
+  isObjectProperty,
   hasLeadingComments,
   hasTrailingComments,
   isJsDoc,

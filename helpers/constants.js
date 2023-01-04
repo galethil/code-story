@@ -34,8 +34,14 @@ const ConditionalExpression = 'ConditionalExpression';
 const BinaryExpression = 'BinaryExpression';
 // 112
 const NumericLiteral = 'NumericLiteral';
+//
+const BooleanLiteral = 'BooleanLiteral';
 // /* comment */
 const CommentBlock = 'CommentBlock';
+// {...spread}
+const SpreadElement = 'SpreadElement';
+// key: value
+const ObjectProperty = 'ObjectProperty';
 
 module.exports = {
   FileType,
@@ -68,5 +74,8 @@ module.exports = {
   ConditionalExpression,
   BinaryExpression,
   NumericLiteral,
-  CommentBlock
+  BooleanLiteral,
+  CommentBlock,
+  SpreadElement,
+  ObjectProperty
 };

@@ -1,4 +1,4 @@
-const { StringLiteral, MemberExpression, BooleanLiteral, NumericLiteral, TemplateLiteral, Identifier } = require('./constants');
+const { StringLiteral, MemberExpression, BooleanLiteral, NumericLiteral, TemplateLiteral, Identifier, CallExpression } = require('./constants');
 const { getAst, getFileFromImport } = require('./loaders');
 const {
   isFile,
@@ -24,6 +24,7 @@ const {
   isConditionalExpression,
   isBinaryExpression,
   isNumericLiteral,
+  isBooleanLiteral,
   isEs6Function,
   isClassicFunction,
   isTryStatement,
@@ -38,7 +39,9 @@ const {
   isMultiVariableImport,
   isLocalPath,
   isStringLiteral,
-  isRegExpLiteral
+  isRegExpLiteral,
+  isSpreadElement,
+  isObjectProperty
 } = require('./questions');
 const {
   getFileImports,
@@ -57,6 +60,7 @@ const {
 class FileHandler {
   constructor(file, options) {
     this.file = file;
+    this.debug = false;
     if (options) this.setOptions(options);
     // this.load();
   }
@@ -70,6 +74,9 @@ class FileHandler {
     this.options = options;
     if ('params' in options) {
       this.setParams(options.params)
+    }
+    if (options?.debug === true) {
+      this.debug = true;
     }
   }
 
@@ -219,6 +226,17 @@ class FileHandler {
           type,
           value
         };
+      case CallExpression:
+        const args = [];
+        for (const arg of element.arguments) {
+          args.push(await this.getFormattedArgument(arg));
+        }
+
+        return {
+          type,
+          name: element.callee.name,
+          arguments: args
+        };
       case Identifier:
         const fromImport = getFormattedImportByActiveName(name, this.imports);
         const identifier = {
@@ -294,7 +312,6 @@ class FileHandler {
         console.log('propss', this.file, element.loc.start, element);
 
     if (isCallExpression(element)) {
-      //console.log(JSON.stringify(element, undefined, 2));
       formattedFunc.type = 'CallExpression';
       // e.g. foo();
       if (element.callee && element.callee.name) {
@@ -383,12 +400,14 @@ class FileHandler {
     } else if (isProgram(elements)) {
       return this.getListOfCalledFunctions(elements.body);
     } else if (!isIterable(elements)) {
-      // console.log('Non iterable elements');
+      if (this.debug) console.log('Non iterable elements');
 
       return listOfCalledFunctions;
     }
     // elements.forEach((bodyElement, index) => {
     for (const bodyElement of elements) {
+      if (this.debug) console.log(`${this.file}:${bodyElement.loc.start.line}:${bodyElement.loc.start.column} ${bodyElement.type}`);
+
       if (isCallExpression(bodyElement)) {
         // e.g. users.filter().map().format()
         if (bodyElement.callee && bodyElement.callee.object && bodyElement.callee.object.callee && bodyElement.callee.property && bodyElement.callee.property.name) {
@@ -456,8 +475,15 @@ class FileHandler {
         listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInBinaryExpression(bodyElement));
       } else if (isNumericLiteral(bodyElement)) {
         // nothing to do with string literal
+      } else if (isBooleanLiteral(bodyElement)) {
+        // nothing to do with string literal
+      } else if (isSpreadElement(bodyElement)) {
+        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInMemberExpression(bodyElement.argument));
+      } else if (isObjectProperty(bodyElement)) {
+        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInObjectProperty(bodyElement));
       } else {
         console.log('Type not defined', bodyElement.type);
+        if (this.debug) console.log(bodyElement);
       }
     }
 
@@ -474,6 +500,15 @@ class FileHandler {
     if (!isObjectExpression(element)) throw Error('This is not a object expression in getListOfCalledFunctionsInObjectExpression');
 
     return await this.getListOfCalledFunctions(element.properties);
+  }
+
+  async getListOfCalledFunctionsInObjectProperty(element) {
+    if (!isObjectProperty(element)) {
+      if (this.debug) console.log(element);
+      throw Error('This is not a object property in getListOfCalledFunctionsInObjectProperty');
+    }
+
+    return await this.getListOfCalledFunctions(element.value);
   }
 
   async getListOfCalledFunctionsInProperty(element) {
@@ -629,7 +664,15 @@ class FileHandler {
     // adding jsDoc
     if (functionElement && functionElement.jsDoc) body.jsDoc = functionElement.jsDoc;
 
-    return await this.getListOfCalledFunctionsInBlockStatement(body);
+    if (isBlockStatement(body)) {
+      return await this.getListOfCalledFunctionsInBlockStatement(body);
+    } else if (isArrowFunctionExpression(body)) {
+      return await this.getListOfCalledFunctionsInArrowFunctionExpression(body);
+    } else {
+      console.error('Enexpected type in function ast', body);
+    }
+    
+    //return await this.getListOfCalledFunctionsInBlockStatement(body);
   }
 
   async getListOfCalledFunctionsInAst(ast) {

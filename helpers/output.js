@@ -94,7 +94,8 @@ const filteredOnly = (codeStory) => {
 };
 
 const custom = (codeStory, formattingFunction) => {
-  const formattedElements = codeStory.elements.filter(storyLine => {
+  const elements = codeStory?.elements ? codeStory.elements : codeStory;
+  const formattedElements = elements.filter(storyLine => {
     if (!storyLine) return false;
     if (!storyLine.name) return false;
     if (storyLine.filteredOut) return false;
