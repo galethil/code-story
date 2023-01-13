@@ -1,5 +1,5 @@
 {
-  "name": "codestory",
+  "name": "@galethil/code-story",
   "version": "1.0.0",
   "description": "Generate workflows, description and whole story of what is going on in the code.",
   "main": "index.js",
