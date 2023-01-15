@@ -5,7 +5,7 @@ that can be used for documentation, code generators or different validations of 
 
 ```javascript
 
-const codeStory = require('code-story');
+const codeStory = require('@galethil/code-story');
 
 // options
 const functionStoryTemplate = {
