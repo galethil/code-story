@@ -209,6 +209,14 @@ class FileHandler {
               name: property.name
             }
           };
+        } else if (object && property) {
+          const objectExpr = await this.getFormattedArgument(object);
+          const propertyExpr = await this.getFormattedArgument(property);
+          return {
+            type,
+            object: objectExpr,
+            property: propertyExpr
+          };
         }
         break;
       case BooleanLiteral:
