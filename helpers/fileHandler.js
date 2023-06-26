@@ -533,8 +533,12 @@ class FileHandler {
 
   async getListOfCalledFunctionsInTryCache(element) {
     if (!isTryStatement(element)) throw Error('This is not a try cache in getListOfCalledFunctionsInTryCache');
+    const listOFBlocks = [];
+    if (element.block) listOFBlocks.push(listOFBlocks);
+    if (element.handler?.body) listOFBlocks.push(element.handler.body);
+    if (element.finalizer?.body) listOFBlocks.push(element.finalizer.body);
 
-    return await this.getListOfCalledFunctions([element.block, element.handler.body]);
+    return await this.getListOfCalledFunctions(listOFBlocks);
   }
 
   async getListOfCalledFunctionsInTryStatement(element) {
