@@ -13,12 +13,12 @@ const getAst = async (file, currentLocation) => {
   const text = fs.readFileSync(file, 'utf8');
 
   if (isJsFile(file)) {
-    return parser.parse(text, { sourceType: 'module' });
+    return {...parser.parse(text, { sourceType: 'module' }), fileLoc: file};
   } else if (isTsFile(file)) {
-    return parse(text, {
+    return {...parse(text, {
       loc: true,
       range: true,
-    });
+    }), fileLoc: file};
   }
 
   throw new Error('Unsupported file type.');

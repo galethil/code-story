@@ -15,7 +15,8 @@ const {
   isMultiVariableImport,
   isLocalPath,
   isCallExpression,
-  isMemberExpression
+  isMemberExpression,
+  functionHasSpecificArguments
 } = require('./questions');
 const { readJsDoc } = require('./jsDoc');
 
@@ -32,12 +33,13 @@ const getMethodOrFunctionName = (name, importDefinition) => {
   }
 };
 
-const getFunctionFromProgramBody = (body, functionName) => {
+const getFunctionFromProgramBody = (body, functionName, args) => {
   let foundElement = body.find((element) => {
     if (
-      isNamedClassicFunction(element, functionName) ||
+      (isNamedClassicFunction(element, functionName) ||
       isNamedEs6Function(element, functionName) ||
-      isNamedExportNamedDeclaration(element, functionName)
+      isNamedExportNamedDeclaration(element, functionName)) &&
+      functionHasSpecificArguments(element, args)
     ) {
       return true;
     }
@@ -143,7 +145,7 @@ const getFileImports = (ast) => {
   const programBody = ast.program ? ast.program.body : ast.body;
 
   // filter all imports
-  return programBody.filter(element => isImport(element));
+  return programBody.filter(element => isImport(element)).map(imp => ({...imp, fileLoc: ast.fileLoc}));
 };
 
 const getImportVariableName = (element) => {

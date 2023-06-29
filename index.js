@@ -9,11 +9,11 @@ const { MemberExpression, Identifier } = require('./helpers/constants');
 
 let storyTemplate;
 
-const describeFunction = async (file, functionName) => {
+const describeFunction = async (file, functionName, params) => {
   const functionFile = new FileHandler(file, storyTemplate);
   await functionFile.load();
 
-  const functionDescription = await functionFile.getListOfCalledFunctionsInFunction(functionName);
+  const functionDescription = await functionFile.getListOfCalledFunctionsInFunction(functionName, params);
 
   return functionDescription;
 };
@@ -23,7 +23,7 @@ const findUsages = async (file, functionName) => {
   await functionFile.load();
 
   const list = await functionFile.getListOfSpecificFunctionsCallsInFile(functionName);
-  // console.log('list', list);
+  // console.log('list', file);
   return list;
 };
 
@@ -52,9 +52,9 @@ const describeFiles = async (path) => {
 };
 
 const functionStory = async () => {
-  const { name, file } = storyTemplate;
+  const { name, file, params } = storyTemplate;
 
-  return await describeFunction(file, name);
+  return await describeFunction(file, name, params);
 };
 
 const usageStory = async () => {

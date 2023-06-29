@@ -56,6 +56,21 @@ const {
   getFolderFromImport
 } = require('./readers');
 
+JSON.safeStringify = (obj, indent = 2) => {
+  let cache = [];
+  const retVal = JSON.stringify(
+    obj,
+    (key, value) =>
+      typeof value === "object" && value !== null
+        ? cache.includes(value)
+          ? undefined // Duplicate reference found, discard key
+          : cache.push(value) && value // Store value in our collection
+        : value,
+    indent
+  );
+  cache = null;
+  return retVal;
+};
 
 class FileHandler {
   constructor(file, options) {
@@ -98,7 +113,7 @@ class FileHandler {
     return this.ast;
   }
 
-  getFunctionFromProgramBody(functionName) {
+  getFunctionFromProgramBody(functionName, args) {
     let programBody;
     if (isProgram(this.ast)) {
       programBody = this.ast.body;
@@ -106,7 +121,7 @@ class FileHandler {
       programBody = this.ast.program.body;
     }
 
-    return getFunctionFromProgramBody(programBody, functionName);
+    return getFunctionFromProgramBody(programBody, functionName, args);
   }
 
   getFunctionCallFromProgramBody(functionName) {
@@ -126,13 +141,15 @@ class FileHandler {
     return getVariableFromProgramBody(programBody, variableName);
   }
 
-  async getListOfCalledFunctionsInFunction(functionName) {
-    const functionAst = this.getFunctionFromProgramBody(functionName);
+  async getListOfCalledFunctionsInFunction(functionName, params) {
+    const functionAst = this.getFunctionFromProgramBody(functionName, params);
+    
     let calledFunctions = await this.getListOfCalledFunctionsInFunctionAst(functionAst);
     if (calledFunctions.length === 0) {
-      const functionCallAst = this.getFunctionCallFromProgramBody(functionName);
-      
+      const functionCallAst = this.getFunctionCallFromProgramBody(functionName, params);
+
       calledFunctions = await this.getListOfCalledFunctionsInAst(functionCallAst?.expression?.arguments);
+
     }
     const jsDoc = functionAst && functionAst.jsDoc ? functionAst.jsDoc : undefined;
     return {
@@ -141,9 +158,24 @@ class FileHandler {
     };
   }
 
-  async getListOfSpecificFunctionsCallsInFile(functionName) {
+  async getListOfSpecificFunctionsCallsInFile(functionName, test) {
     const calledFunctions = await this.getListOfCalledFunctionsInAst(this.ast);
-    //console.log(this.ast, calledFunctions);
+    
+    return calledFunctions;
+  }
+
+  async getListOfFunctionsInSpecificFunctionsDefinitionsInFile(functionName, test) {
+    const foundFunctions = this.getListOfFunctionDefinitions(this.ast);
+    
+    const specificFunction = foundFunctions.find(bodyElement => {
+      if (isVariableDeclaration(bodyElement) && bodyElement.declarations[0].id.name === functionName) {
+        return true;
+      }
+
+      return false;
+    });
+  
+    const calledFunctions = await this.getListOfCalledFunctionsInAst(specificFunction);
 
     return calledFunctions;
   }
@@ -248,7 +280,8 @@ class FileHandler {
       case Identifier:
         const fromImport = getFormattedImportByActiveName(name, this.imports);
         const identifier = {
-          type
+          type,
+          name
         };
         // found variable is from import
         
@@ -274,8 +307,12 @@ class FileHandler {
                   }
                 );
                 await functionFile.load();
-
-                identifier.import.functions = await functionFile.getListOfSpecificFunctionsCallsInFile(identifier.originalName);
+                
+                if (this.options.type === 'usageStory') {
+                  identifier.import.functions = await functionFile.getListOfSpecificFunctionsCallsInFile(identifier.originalName);
+                } else {
+                  identifier.import.functions = await functionFile.getListOfFunctionsInSpecificFunctionsDefinitionsInFile(identifier.originalName, 'test');
+                }
               }
             }
           }
@@ -331,9 +368,9 @@ class FileHandler {
         formattedFunc.name = `${element.callee.object.name}.${element.callee.property.name}`;
         formattedFunc.variableName = element.callee.object.name;
         formattedFunc.propertyName = element.callee.property.name;
-
+        
       } else if (element.callee && isMemberExpression(element.callee)) {
-        return await this.getFormattedCalledFunction(element.callee.object );
+        return await this.getFormattedCalledFunction(element.callee.object);
       } else {
         console.log('kk');
       }
@@ -344,6 +381,7 @@ class FileHandler {
     }
 
     const fromImport = getFormattedImportByActiveName(formattedFunc.variableName, this.imports);
+    
     // found called functions from import
     if (fromImport) {
       formattedFunc.import = fromImport;
@@ -374,7 +412,8 @@ class FileHandler {
     }
 
     const fromParams = getFormattedParamByActiveName(formattedFunc.variableName, this.params);
-
+    
+    
     if (fromParams) {
       formattedFunc.import = fromParams;
 
@@ -392,8 +431,10 @@ class FileHandler {
       formattedFunc.import.functions = await paramFile.getListOfCalledFunctionsInFunction(formattedFunc.propertyName);
     }
 
+    
     if (element.arguments) {
       formattedFunc.arguments = await this.getFormattedArguments(element.arguments);
+      // console.log('element.arguments', formattedFunc.arguments)
     }
 
     return formattedFunc;
@@ -401,7 +442,41 @@ class FileHandler {
 
   // FUNCTIONS
 
+  getListOfFunctionDefinitions(elements) {
+    let listOfFunctionDefinitions = [];
+    if (isFile(elements)) {
+      return this.getListOfFunctionDefinitions(elements.program);
+    } else if (isProgram(elements)) {
+      return this.getListOfFunctionDefinitions(elements.body);
+    } else if (!isIterable(elements)) {
+      if (this.debug) console.log('Non iterable elements');
+
+      return listOfFunctionDefinitions;
+    }
+    
+
+    for (const bodyElement of elements) {
+      // console.log(bodyElement, this.file);
+      if (isVariableDeclaration(bodyElement)) {
+        
+        if (isArrowFunctionExpression(bodyElement.declarations[0].init)) {
+          listOfFunctionDefinitions.push(bodyElement);
+        }
+        
+      } else if (isClassicFunction(bodyElement)) {
+        listOfFunctionDefinitions.push(bodyElement);
+      }
+    }
+
+    return listOfFunctionDefinitions;
+
+
+  }
+
+  // getListOfFunctionDefinitions
+
   async getListOfCalledFunctions(elements) {
+    
     let listOfCalledFunctions = [];
     if (isFile(elements)) {
       return this.getListOfCalledFunctions(elements.program);
@@ -410,11 +485,11 @@ class FileHandler {
     } else if (!isIterable(elements)) {
       if (this.debug) console.log('Non iterable elements');
 
-      return listOfCalledFunctions;
+      return this.getListOfCalledFunctions([elements]);
     }
     // elements.forEach((bodyElement, index) => {
     for (const bodyElement of elements) {
-      if (this.debug) console.log(`${this.file}:${bodyElement.loc.start.line}:${bodyElement.loc.start.column} ${bodyElement.type}`);
+      if (this.debug) console.log(`${this.file}:${bodyElement.loc?.start?.line}:${bodyElement.loc?.start?.column} ${bodyElement.type}`);
 
       if (isCallExpression(bodyElement)) {
         // e.g. users.filter().map().format()
@@ -489,8 +564,10 @@ class FileHandler {
         listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInMemberExpression(bodyElement.argument));
       } else if (isObjectProperty(bodyElement)) {
         listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInObjectProperty(bodyElement));
+      } else if (Array.isArray(bodyElement)) {
+        // listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions(bodyElement));
       } else {
-        console.log('Type not defined', bodyElement.type);
+        console.log('Type not defined', bodyElement.type, JSON.safeStringify(bodyElement));
         if (this.debug) console.log(bodyElement);
       }
     }

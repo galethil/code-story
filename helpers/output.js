@@ -43,7 +43,7 @@ const text = (codeStory, spacing = 0) => {
       //   finalText += ` (${storyLine.import.importFrom})`;
       // }
       if (storyLine.file) {
-        finalText += ` (${storyLine.file})`;
+        finalText += ` (${storyLine.file}:${storyLine?.loc?.start?.line}) `;
       }
 
       finalText += "\n";

@@ -111,6 +111,24 @@ const isExport = (element) => (
 
 const hasArguments = (element) => (element.arguments && element.arguments.length > 0);
 
+const functionHasSpecificArguments = (element, paramsValidationFunctions = []) => {
+  if (isEs6Function(element)) {
+    for (const paramId in paramsValidationFunctions) {
+      const result = paramsValidationFunctions[paramId](element.declarations[0].init.params[paramId]);
+
+      if (!result) return false;
+    }
+  } else if (isClassicFunction(element)) {
+    for (const paramId in paramsValidationFunctions) {
+      const result = paramsValidationFunctions[paramId](element.params[paramId]);
+
+      if (!result) return false;
+    }
+  }
+
+  return true;
+}
+
 const isEs6Function = (element) => (
   element &&
   element.type === 'VariableDeclaration' &&
@@ -229,6 +247,7 @@ module.exports = {
   isProgram,
   isIterable,
   hasArguments,
+  functionHasSpecificArguments,
   isCallExpression,
   isAwaitExpression,
   isIdentifier,
