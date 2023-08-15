@@ -567,7 +567,7 @@ class FileHandler {
       } else if (Array.isArray(bodyElement)) {
         // listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions(bodyElement));
       } else {
-        console.log('Type not defined', bodyElement.type, JSON.safeStringify(bodyElement));
+        console.log('Type not defined', bodyElement?.type, JSON.safeStringify(bodyElement));
         if (this.debug) console.log(bodyElement);
       }
     }
