@@ -240,6 +240,20 @@ const isImport = (element) => (
   isImportTypeImport(element)
 );
 
+const isImportDeclaration = (element) => (
+  element &&
+  element.type === 'ImportDeclaration'
+);
+
+const isExportDefaultDeclaration = (element) => (
+  element &&
+  element.type === 'ExportDefaultDeclaration'
+);
+
+const isOptionalMemberExpression = (element) => (
+  element &&
+  element.type === 'OptionalMemberExpression'
+);
 
 
 module.exports = {
@@ -294,6 +308,9 @@ module.exports = {
   isRequireTypeImport,
   isImportTypeImport,
   isImport,
+  isImportDeclaration,
+  isExportDefaultDeclaration,
   isMultiVariableImport,
-  isLocalPath
+  isLocalPath,
+  isOptionalMemberExpression
 };

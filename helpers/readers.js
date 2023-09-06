@@ -131,7 +131,7 @@ const getFormattedParamByActiveName = (name, formattedParams = []) => {
       return true;
     }
   });
-  if (foundParam) {
+  if (foundParam && typeof foundParam === 'object') {
     return {
       originalName: foundParam.paramName,
       activeName: foundParam.paramName,
@@ -212,8 +212,7 @@ const getFormattedImports = (imports) => {
     const activeNames = getImportVariablesNames(importElement, false);
     const importFrom = getImportImportedName(importElement);
     const isLocalImport = isLocalPath(importFrom);
-    // console.log('import', originalNames, activeNames, importFrom, isLocalImport);
-
+    if (!importFrom) console.log('importElement', importElement);
     originalNames.forEach((originalName, index) => {
       formattedImports.push({
         originalName,

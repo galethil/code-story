@@ -4,6 +4,7 @@ const CallExpression = 'CallExpression';
 const AwaitExpression = 'AwaitExpression';
 const Identifier = 'Identifier';
 const ImportNamespaceSpecifier = 'ImportNamespaceSpecifier';
+const ImportDeclaration = 'ImportDeclaration';
 const ExpressionStatement = 'ExpressionStatement';
 const AssignmentExpression = 'AssignmentExpression';
 const BlockStatement = 'BlockStatement';
@@ -50,6 +51,7 @@ module.exports = {
   AwaitExpression,
   Identifier,
   ImportNamespaceSpecifier,
+  ImportDeclaration,
   ExpressionStatement,
   AssignmentExpression,
   BlockStatement,

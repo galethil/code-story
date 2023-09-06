@@ -33,6 +33,10 @@ const {
   isProperty,
   isCatchClause,
   isThrowStatement,
+  isImportDeclaration,
+  isExportDefaultDeclaration,
+  isExportNamedDeclaration,
+  isOptionalMemberExpression,
   isImport,
   isImportTypeImport,
   isRequireTypeImport,
@@ -353,8 +357,6 @@ class FileHandler {
       loc: element.loc,
       file: this.file
     };
-    if (this.file === './src/service/index.ts' && element.loc.start.line == 401)
-        console.log('propss', this.file, element.loc.start, element);
 
     if (isCallExpression(element)) {
       formattedFunc.type = 'CallExpression';
@@ -412,11 +414,11 @@ class FileHandler {
     }
 
     const fromParams = getFormattedParamByActiveName(formattedFunc.variableName, this.params);
-    
+    // console.log('fromParams ', fromParams, formattedFunc, this.params);
     
     if (fromParams) {
       formattedFunc.import = fromParams;
-
+      
       const filePath = await getFileFromImport(fromParams.importFrom);
 
       const paramFile = new FileHandler(
@@ -557,15 +559,25 @@ class FileHandler {
       } else if (isBinaryExpression(bodyElement)) {
         listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInBinaryExpression(bodyElement));
       } else if (isNumericLiteral(bodyElement)) {
-        // nothing to do with string literal
+        // nothing to do with numeric literal
       } else if (isBooleanLiteral(bodyElement)) {
-        // nothing to do with string literal
+        // nothing to do with boolean literal
       } else if (isSpreadElement(bodyElement)) {
         listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInMemberExpression(bodyElement.argument));
       } else if (isObjectProperty(bodyElement)) {
         listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInObjectProperty(bodyElement));
       } else if (Array.isArray(bodyElement)) {
         // listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions(bodyElement));
+      } else if (isImportDeclaration(bodyElement)) {
+        // nothing to do with import declaration
+      } else if (isExportDefaultDeclaration(bodyElement)) {
+        // nothing to do with export default declaration
+      } else if (isExportNamedDeclaration(bodyElement)) {
+         // nothing to do with export default declaration
+      } else if (isOptionalMemberExpression(bodyElement)) {
+        // nothing to do with
+      } else if (bodyElement === undefined) {
+        // ignore undefined
       } else {
         console.log('Type not defined', bodyElement?.type, JSON.safeStringify(bodyElement));
         if (this.debug) console.log(bodyElement);
