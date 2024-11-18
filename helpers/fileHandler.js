@@ -1,5 +1,13 @@
-const { StringLiteral, MemberExpression, BooleanLiteral, NumericLiteral, TemplateLiteral, Identifier, CallExpression } = require('./constants');
-const { getAst, getFileFromImport } = require('./loaders');
+const {
+  StringLiteral,
+  MemberExpression,
+  BooleanLiteral,
+  NumericLiteral,
+  TemplateLiteral,
+  Identifier,
+  CallExpression,
+} = require("./constants");
+const { getAst, getFileFromImport } = require("./loaders");
 const {
   isFile,
   isProgram,
@@ -45,8 +53,9 @@ const {
   isStringLiteral,
   isRegExpLiteral,
   isSpreadElement,
-  isObjectProperty
-} = require('./questions');
+  isObjectProperty,
+  isForOfStatement,
+} = require("./questions");
 const {
   getFileImports,
   getImportVariablesNames,
@@ -57,8 +66,8 @@ const {
   getFormattedImportByActiveName,
   getFormattedParamByActiveName,
   getMethodOrFunctionName,
-  getFolderFromImport
-} = require('./readers');
+  getFolderFromImport,
+} = require("./readers");
 
 JSON.safeStringify = (obj, indent = 2) => {
   let cache = [];
@@ -91,8 +100,8 @@ class FileHandler {
 
   setOptions(options) {
     this.options = options;
-    if ('params' in options) {
-      this.setParams(options.params)
+    if ("params" in options) {
+      this.setParams(options.params);
     }
     if (options?.debug === true) {
       this.debug = true;
@@ -147,39 +156,54 @@ class FileHandler {
 
   async getListOfCalledFunctionsInFunction(functionName, params) {
     const functionAst = this.getFunctionFromProgramBody(functionName, params);
-    
-    let calledFunctions = await this.getListOfCalledFunctionsInFunctionAst(functionAst);
+
+    let calledFunctions = await this.getListOfCalledFunctionsInFunctionAst(
+      functionAst
+    );
     if (calledFunctions.length === 0) {
-      const functionCallAst = this.getFunctionCallFromProgramBody(functionName, params);
+      const functionCallAst = this.getFunctionCallFromProgramBody(
+        functionName,
+        params
+      );
 
-      calledFunctions = await this.getListOfCalledFunctionsInAst(functionCallAst?.expression?.arguments);
-
+      calledFunctions = await this.getListOfCalledFunctionsInAst(
+        functionCallAst?.expression?.arguments
+      );
     }
-    const jsDoc = functionAst && functionAst.jsDoc ? functionAst.jsDoc : undefined;
+    const jsDoc =
+      functionAst && functionAst.jsDoc ? functionAst.jsDoc : undefined;
     return {
       elements: calledFunctions,
-      jsDoc
+      jsDoc,
     };
   }
 
   async getListOfSpecificFunctionsCallsInFile(functionName, test) {
     const calledFunctions = await this.getListOfCalledFunctionsInAst(this.ast);
-    
+
     return calledFunctions;
   }
 
-  async getListOfFunctionsInSpecificFunctionsDefinitionsInFile(functionName, test) {
+  async getListOfFunctionsInSpecificFunctionsDefinitionsInFile(
+    functionName,
+    test
+  ) {
     const foundFunctions = this.getListOfFunctionDefinitions(this.ast);
-    
-    const specificFunction = foundFunctions.find(bodyElement => {
-      if (isVariableDeclaration(bodyElement) && bodyElement.declarations[0].id.name === functionName) {
+
+    const specificFunction = foundFunctions.find((bodyElement) => {
+      if (
+        isVariableDeclaration(bodyElement) &&
+        bodyElement.declarations[0].id.name === functionName
+      ) {
         return true;
       }
 
       return false;
     });
-  
-    const calledFunctions = await this.getListOfCalledFunctionsInAst(specificFunction);
+
+    const calledFunctions = await this.getListOfCalledFunctionsInAst(
+      specificFunction
+    );
 
     return calledFunctions;
   }
@@ -199,15 +223,26 @@ class FileHandler {
   getFormattedName(element) {
     const formatted = {
       loc: element.loc,
-      file: this.file
+      file: this.file,
     };
     if (element.callee && element.callee.name) {
       formatted.name = element.callee.name;
       formatted.variableName = element.callee.name;
-    } else if (element.callee && element.callee.object && element.callee.object.name && element.callee.property && element.callee.property.name) {
+    } else if (
+      element.callee &&
+      element.callee.object &&
+      element.callee.object.name &&
+      element.callee.property &&
+      element.callee.property.name
+    ) {
       formatted.name = `${element.callee.object.name}.${element.callee.property.name}`;
       formatted.variableName = element.callee.object.name;
-    } if (element.argument && element.argument.callee && element.argument.callee.name) {
+    }
+    if (
+      element.argument &&
+      element.argument.callee &&
+      element.argument.callee.name
+    ) {
       formatted.name = element.argument.callee.name;
       formatted.variableName = element.argument.callee.name;
     }
@@ -230,20 +265,25 @@ class FileHandler {
       case StringLiteral:
         return {
           type,
-          value
+          value,
         };
       case MemberExpression:
-        if (object && property && object.type === Identifier && property.type === Identifier) {
+        if (
+          object &&
+          property &&
+          object.type === Identifier &&
+          property.type === Identifier
+        ) {
           return {
             type,
             name: `${object.name}.${property.name}`,
             value: `${object.name}.${property.name}`,
             object: {
-              name: object.name
+              name: object.name,
             },
             property: {
-              name: property.name
-            }
+              name: property.name,
+            },
           };
         } else if (object && property) {
           const objectExpr = await this.getFormattedArgument(object);
@@ -251,24 +291,24 @@ class FileHandler {
           return {
             type,
             object: objectExpr,
-            property: propertyExpr
+            property: propertyExpr,
           };
         }
         break;
       case BooleanLiteral:
         return {
           type,
-          value
+          value,
         };
       case NumericLiteral:
         return {
           type,
-          value
+          value,
         };
       case TemplateLiteral:
         return {
           type,
-          value
+          value,
         };
       case CallExpression:
         const args = [];
@@ -279,43 +319,55 @@ class FileHandler {
         return {
           type,
           name: element.callee.name,
-          arguments: args
+          arguments: args,
         };
       case Identifier:
         const fromImport = getFormattedImportByActiveName(name, this.imports);
         const identifier = {
           type,
-          name
+          name,
         };
         // found variable is from import
-        
+
         if (fromImport) {
           identifier.import = fromImport;
           identifier.originalName = getMethodOrFunctionName(name, fromImport);
           identifier.name = identifier.originalName;
 
           // following the imports
-          if (this.options && this.options.followImports && (this.options.followImportsDeptLevel === undefined || (this.options.followImportsDeptLevel && this.options.followImportsDeptLevel !== 0))) {
-
+          if (
+            this.options &&
+            this.options.followImports &&
+            (this.options.followImportsDeptLevel === undefined ||
+              (this.options.followImportsDeptLevel &&
+                this.options.followImportsDeptLevel !== 0))
+          ) {
             if (fromImport.isLocalImport) {
-
-              const importLocalPath = `${getFolderFromImport(this.file)}/${fromImport.importFrom}`;
+              const importLocalPath = `${getFolderFromImport(this.file)}/${
+                fromImport.importFrom
+              }`;
               const filePath = await getFileFromImport(importLocalPath);
-              
+
               if (filePath) {
-                const functionFile = new FileHandler(
-                  filePath,
-                  {
-                    ...this.options,
-                    followImportsDeptLevel: this.options.followImportsDeptLevel ? this.options.followImportsDeptLevel - 1 : this.options.followImportsDeptLevel
-                  }
-                );
+                const functionFile = new FileHandler(filePath, {
+                  ...this.options,
+                  followImportsDeptLevel: this.options.followImportsDeptLevel
+                    ? this.options.followImportsDeptLevel - 1
+                    : this.options.followImportsDeptLevel,
+                });
                 await functionFile.load();
-                
-                if (this.options.type === 'usageStory') {
-                  identifier.import.functions = await functionFile.getListOfSpecificFunctionsCallsInFile(identifier.originalName);
+
+                if (this.options.type === "usageStory") {
+                  identifier.import.functions =
+                    await functionFile.getListOfSpecificFunctionsCallsInFile(
+                      identifier.originalName
+                    );
                 } else {
-                  identifier.import.functions = await functionFile.getListOfFunctionsInSpecificFunctionsDefinitionsInFile(identifier.originalName, 'test');
+                  identifier.import.functions =
+                    await functionFile.getListOfFunctionsInSpecificFunctionsDefinitionsInFile(
+                      identifier.originalName,
+                      "test"
+                    );
                 }
               }
             }
@@ -325,7 +377,7 @@ class FileHandler {
         return identifier;
       default:
         return {
-          type
+          type,
         };
     }
   }
@@ -333,18 +385,19 @@ class FileHandler {
   async getFormattedThrowStatement(element) {
     const formatted = this.getFormattedName(element);
     if (isThrowStatement(element)) {
-      formatted.type = 'ThrowStatement';
+      formatted.type = "ThrowStatement";
 
       if (element.argument && element.argument.arguments) {
-        formatted.arguments = await this.getFormattedArguments(element.argument.arguments);
+        formatted.arguments = await this.getFormattedArguments(
+          element.argument.arguments
+        );
       }
     }
     return formatted;
   }
 
   async getFormattedCalledFunction(element) {
-    const getChainedName = (chainedElement, name = '') => {
-
+    const getChainedName = (chainedElement, name = "") => {
       if (chainedElement.callee?.object?.callee) {
         name = getChainedName(chainedElement.callee.object);
       }
@@ -352,29 +405,34 @@ class FileHandler {
         return `${name}.${chainedElement.callee.property.name}`;
       }
       return name;
-    }
+    };
     const formattedFunc = {
       loc: element.loc,
-      file: this.file
+      file: this.file,
     };
 
     if (isCallExpression(element)) {
-      formattedFunc.type = 'CallExpression';
+      formattedFunc.type = "CallExpression";
       // e.g. foo();
       if (element.callee && element.callee.name) {
         formattedFunc.name = element.callee.name;
         formattedFunc.variableName = element.callee.name;
 
         // e.g. logger.debug()
-      } else if (element.callee && element.callee.object && element.callee.object.name && element.callee.property && element.callee.property.name) {
+      } else if (
+        element.callee &&
+        element.callee.object &&
+        element.callee.object.name &&
+        element.callee.property &&
+        element.callee.property.name
+      ) {
         formattedFunc.name = `${element.callee.object.name}.${element.callee.property.name}`;
         formattedFunc.variableName = element.callee.object.name;
         formattedFunc.propertyName = element.callee.property.name;
-        
       } else if (element.callee && isMemberExpression(element.callee)) {
         return await this.getFormattedCalledFunction(element.callee.object);
       } else {
-        console.log('kk');
+        console.log("kk");
       }
 
       // e.g. (await someAsyncCall())
@@ -382,60 +440,80 @@ class FileHandler {
       return await this.getFormattedCalledFunction(element.argument);
     }
 
-    const fromImport = getFormattedImportByActiveName(formattedFunc.variableName, this.imports);
-    
+    const fromImport = getFormattedImportByActiveName(
+      formattedFunc.variableName,
+      this.imports
+    );
+
     // found called functions from import
     if (fromImport) {
       formattedFunc.import = fromImport;
-      formattedFunc.originalName = getMethodOrFunctionName(formattedFunc.name, fromImport);
+      formattedFunc.originalName = getMethodOrFunctionName(
+        formattedFunc.name,
+        fromImport
+      );
 
       // following the imports
-      if (this.options && this.options.followImports && (this.options.followImportsDeptLevel === undefined || (this.options.followImportsDeptLevel && this.options.followImportsDeptLevel !== 0))) {
-
+      if (
+        this.options &&
+        this.options.followImports &&
+        (this.options.followImportsDeptLevel === undefined ||
+          (this.options.followImportsDeptLevel &&
+            this.options.followImportsDeptLevel !== 0))
+      ) {
         if (fromImport.isLocalImport) {
-
-          const importLocalPath = `${getFolderFromImport(this.file)}/${fromImport.importFrom}`;
+          const importLocalPath = `${getFolderFromImport(this.file)}/${
+            fromImport.importFrom
+          }`;
           const filePath = await getFileFromImport(importLocalPath);
 
           if (filePath) {
-            const functionFile = new FileHandler(
-              filePath,
-              {
-                ...this.options,
-                followImportsDeptLevel: this.options.followImportsDeptLevel ? this.options.followImportsDeptLevel - 1 : this.options.followImportsDeptLevel
-              }
-            );
+            const functionFile = new FileHandler(filePath, {
+              ...this.options,
+              followImportsDeptLevel: this.options.followImportsDeptLevel
+                ? this.options.followImportsDeptLevel - 1
+                : this.options.followImportsDeptLevel,
+            });
             await functionFile.load();
 
-            formattedFunc.import.functions = await functionFile.getListOfCalledFunctionsInFunction(formattedFunc.originalName);
+            formattedFunc.import.functions =
+              await functionFile.getListOfCalledFunctionsInFunction(
+                formattedFunc.originalName
+              );
           }
         }
       }
     }
 
-    const fromParams = getFormattedParamByActiveName(formattedFunc.variableName, this.params);
+    const fromParams = getFormattedParamByActiveName(
+      formattedFunc.variableName,
+      this.params
+    );
     // console.log('fromParams ', fromParams, formattedFunc, this.params);
-    
+
     if (fromParams) {
       formattedFunc.import = fromParams;
-      
+
       const filePath = await getFileFromImport(fromParams.importFrom);
 
-      const paramFile = new FileHandler(
-        filePath,
-        {
-          ...this.options,
-          followImportsDeptLevel: this.options.followImportsDeptLevel ? this.options.followImportsDeptLevel - 1 : this.options.followImportsDeptLevel
-        }
-      );
+      const paramFile = new FileHandler(filePath, {
+        ...this.options,
+        followImportsDeptLevel: this.options.followImportsDeptLevel
+          ? this.options.followImportsDeptLevel - 1
+          : this.options.followImportsDeptLevel,
+      });
       await paramFile.load();
 
-      formattedFunc.import.functions = await paramFile.getListOfCalledFunctionsInFunction(formattedFunc.propertyName);
+      formattedFunc.import.functions =
+        await paramFile.getListOfCalledFunctionsInFunction(
+          formattedFunc.propertyName
+        );
     }
 
-    
     if (element.arguments) {
-      formattedFunc.arguments = await this.getFormattedArguments(element.arguments);
+      formattedFunc.arguments = await this.getFormattedArguments(
+        element.arguments
+      );
       // console.log('element.arguments', formattedFunc.arguments)
     }
 
@@ -451,51 +529,54 @@ class FileHandler {
     } else if (isProgram(elements)) {
       return this.getListOfFunctionDefinitions(elements.body);
     } else if (!isIterable(elements)) {
-      if (this.debug) console.log('Non iterable elements');
+      if (this.debug) console.log("Non iterable elements");
 
       return listOfFunctionDefinitions;
     }
-    
 
     for (const bodyElement of elements) {
       // console.log(bodyElement, this.file);
       if (isVariableDeclaration(bodyElement)) {
-        
         if (isArrowFunctionExpression(bodyElement.declarations[0].init)) {
           listOfFunctionDefinitions.push(bodyElement);
         }
-        
       } else if (isClassicFunction(bodyElement)) {
         listOfFunctionDefinitions.push(bodyElement);
       }
     }
 
     return listOfFunctionDefinitions;
-
-
   }
 
   // getListOfFunctionDefinitions
 
   async getListOfCalledFunctions(elements) {
-    
     let listOfCalledFunctions = [];
     if (isFile(elements)) {
       return this.getListOfCalledFunctions(elements.program);
     } else if (isProgram(elements)) {
       return this.getListOfCalledFunctions(elements.body);
     } else if (!isIterable(elements)) {
-      if (this.debug) console.log('Non iterable elements');
+      if (this.debug) console.log("Non iterable elements");
 
       return this.getListOfCalledFunctions([elements]);
     }
     // elements.forEach((bodyElement, index) => {
     for (const bodyElement of elements) {
-      if (this.debug) console.log(`${this.file}:${bodyElement.loc?.start?.line}:${bodyElement.loc?.start?.column} ${bodyElement.type}`);
+      if (this.debug)
+        console.log(
+          `${this.file}:${bodyElement.loc?.start?.line}:${bodyElement.loc?.start?.column} ${bodyElement.type}`
+        );
 
       if (isCallExpression(bodyElement)) {
         // e.g. users.filter().map().format()
-        if (bodyElement.callee && bodyElement.callee.object && bodyElement.callee.object.callee && bodyElement.callee.property && bodyElement.callee.property.name) {
+        if (
+          bodyElement.callee &&
+          bodyElement.callee.object &&
+          bodyElement.callee.object.callee &&
+          bodyElement.callee.property &&
+          bodyElement.callee.property.name
+        ) {
           // console.log('bodyElement.callee.object.callee')
           // const chainedName = getChainedName(element);
           // formattedFunc.name = chainedName;
@@ -503,69 +584,123 @@ class FileHandler {
           // listOfCalledFunctions = listOfCalledFunctions.concat(await this.getFormattedCalledFunction(bodyElement));
         }
 
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getFormattedCalledFunction(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getFormattedCalledFunction(bodyElement)
+        );
 
         if (hasArguments(bodyElement)) {
-          listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions(bodyElement.arguments));
+          listOfCalledFunctions = listOfCalledFunctions.concat(
+            await this.getListOfCalledFunctions(bodyElement.arguments)
+          );
         }
       } else if (isAwaitExpression(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInAwaitExpression(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInAwaitExpression(bodyElement)
+        );
       } else if (isExpressionStatement(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInExpressionStatement(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInExpressionStatement(bodyElement)
+        );
       } else if (isIfStatement(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInIfStatement(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInIfStatement(bodyElement)
+        );
       } else if (isAssignmentExpression(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInAssignmentExpression(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInAssignmentExpression(bodyElement)
+        );
       } else if (isVariableDeclaration(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInVariableDeclaration(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInVariableDeclaration(bodyElement)
+        );
       } else if (isVariableDeclarator(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInVariableDeclarator(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInVariableDeclarator(bodyElement)
+        );
       } else if (isArrowFunctionExpression(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInArrowFunctionExpression(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInArrowFunctionExpression(
+            bodyElement
+          )
+        );
       } else if (isBlockStatement(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInBlockStatement(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInBlockStatement(bodyElement)
+        );
       } else if (isArrayExpression(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInArrayExpression(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInArrayExpression(bodyElement)
+        );
       } else if (isReturnStatement(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInReturnStatement(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInReturnStatement(bodyElement)
+        );
       } else if (isTryStatement(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInTryCache(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInTryCache(bodyElement)
+        );
       } else if (isTemplateLiteral(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInTemplateLiteral(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInTemplateLiteral(bodyElement)
+        );
       } else if (isMemberExpression(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInMemberExpression(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInMemberExpression(bodyElement)
+        );
       } else if (isThrowStatement(bodyElement)) {
         // nothing should be in throw
-        listOfCalledFunctions.push(await this.getFormattedThrowStatement(bodyElement));
+        listOfCalledFunctions.push(
+          await this.getFormattedThrowStatement(bodyElement)
+        );
       } else if (isIdentifier(bodyElement)) {
         // nothing to do with identifiers
       } else if (isObjectExpression(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInObjectExpression(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInObjectExpression(bodyElement)
+        );
       } else if (isProperty(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInProperty(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInProperty(bodyElement)
+        );
       } else if (isStringLiteral(bodyElement)) {
         // nothing to do with string literal
       } else if (isNewExpression(bodyElement)) {
         // new class e.g. new URL('http://example.com')
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInNewExpression(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInNewExpression(bodyElement)
+        );
       } else if (isRegExpLiteral(bodyElement)) {
         // nothing to do with string literal
       } else if (isUnaryExpression(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInUnaryExpression(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInUnaryExpression(bodyElement)
+        );
       } else if (isLogicalExpression(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInLogicalExpression(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInLogicalExpression(bodyElement)
+        );
       } else if (isConditionalExpression(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInConditionalExpression(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInConditionalExpression(
+            bodyElement
+          )
+        );
       } else if (isBinaryExpression(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInBinaryExpression(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInBinaryExpression(bodyElement)
+        );
       } else if (isNumericLiteral(bodyElement)) {
         // nothing to do with numeric literal
       } else if (isBooleanLiteral(bodyElement)) {
         // nothing to do with boolean literal
       } else if (isSpreadElement(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInMemberExpression(bodyElement.argument));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInSpreadElement(bodyElement)
+        );
       } else if (isObjectProperty(bodyElement)) {
-        listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctionsInObjectProperty(bodyElement));
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInObjectProperty(bodyElement)
+        );
       } else if (Array.isArray(bodyElement)) {
         // listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions(bodyElement));
       } else if (isImportDeclaration(bodyElement)) {
@@ -573,13 +708,21 @@ class FileHandler {
       } else if (isExportDefaultDeclaration(bodyElement)) {
         // nothing to do with export default declaration
       } else if (isExportNamedDeclaration(bodyElement)) {
-         // nothing to do with export default declaration
+        // nothing to do with export default declaration
       } else if (isOptionalMemberExpression(bodyElement)) {
         // nothing to do with
+      } else if (isForOfStatement(bodyElement)) {
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInForOfStatement(bodyElement)
+        );
       } else if (bodyElement === undefined) {
         // ignore undefined
       } else {
-        console.log('Type not defined', bodyElement?.type, JSON.safeStringify(bodyElement));
+        console.log(
+          "Type not defined",
+          bodyElement?.type,
+          JSON.safeStringify(bodyElement)
+        );
         if (this.debug) console.log(bodyElement);
       }
     }
@@ -588,13 +731,29 @@ class FileHandler {
   }
 
   async getListOfCalledFunctionsInMemberExpression(element) {
-    if (!isMemberExpression(element)) throw Error('This is not a member expression in getListOfCalledFunctionsInMemberExpression');
+    if (!isMemberExpression(element))
+      throw Error(
+        "This is not a member expression in getListOfCalledFunctionsInMemberExpression. It is " +
+          element.type
+      );
 
     return await this.getListOfCalledFunctions([element.property]);
   }
 
+  async getListOfCalledFunctionsInSpreadElement(element) {
+    if (!isSpreadElement(element))
+      throw Error(
+        "This is not a spread element in getListOfCalledFunctionsInSpreadElement"
+      );
+
+    return await this.getListOfCalledFunctions([element.argument]);
+  }
+
   async getListOfCalledFunctionsInObjectExpression(element) {
-    if (!isObjectExpression(element)) throw Error('This is not a object expression in getListOfCalledFunctionsInObjectExpression');
+    if (!isObjectExpression(element))
+      throw Error(
+        "This is not a object expression in getListOfCalledFunctionsInObjectExpression"
+      );
 
     return await this.getListOfCalledFunctions(element.properties);
   }
@@ -602,26 +761,51 @@ class FileHandler {
   async getListOfCalledFunctionsInObjectProperty(element) {
     if (!isObjectProperty(element)) {
       if (this.debug) console.log(element);
-      throw Error('This is not a object property in getListOfCalledFunctionsInObjectProperty');
+      throw Error(
+        "This is not a object property in getListOfCalledFunctionsInObjectProperty"
+      );
     }
 
     return await this.getListOfCalledFunctions(element.value);
   }
 
   async getListOfCalledFunctionsInProperty(element) {
-    if (!isProperty(element)) throw Error('This is not a property in getListOfCalledFunctionsInProperty');
+    if (!isProperty(element))
+      throw Error(
+        "This is not a property in getListOfCalledFunctionsInProperty"
+      );
 
     return await this.getListOfCalledFunctions([element.value]);
   }
 
   async getListOfCalledFunctionsInTemplateLiteral(element) {
-    if (!isTemplateLiteral(element)) throw Error('This is not a template literal in getListOfCalledFunctionsInTemplateLiteral');
+    if (!isTemplateLiteral(element))
+      throw Error(
+        "This is not a template literal in getListOfCalledFunctionsInTemplateLiteral"
+      );
 
     return await this.getListOfCalledFunctions(element.expressions);
   }
 
+  async getListOfCalledFunctionsInForOfStatement(element) {
+    if (!isForOfStatement(element))
+      throw Error(
+        "This is not a for of statement in getListOfCalledFunctionsInForOfStatement"
+      );
+
+    const listOFBlocks = [];
+    if (element.body) listOFBlocks.push(element.body);
+    if (element.left) listOFBlocks.push(element.left);
+    if (element.right) listOFBlocks.push(element.right);
+
+    return await this.getListOfCalledFunctions(listOFBlocks);
+  }
+
   async getListOfCalledFunctionsInTryCache(element) {
-    if (!isTryStatement(element)) throw Error('This is not a try cache in getListOfCalledFunctionsInTryCache');
+    if (!isTryStatement(element))
+      throw Error(
+        "This is not a try cache in getListOfCalledFunctionsInTryCache"
+      );
     const listOFBlocks = [];
     if (element.block) listOFBlocks.push(listOFBlocks);
     if (element.handler?.body) listOFBlocks.push(element.handler.body);
@@ -631,19 +815,28 @@ class FileHandler {
   }
 
   async getListOfCalledFunctionsInTryStatement(element) {
-    if (!isTryStatement(element)) throw Error('This is not a try statement in getListOfCalledFunctionsInTryStatement');
+    if (!isTryStatement(element))
+      throw Error(
+        "This is not a try statement in getListOfCalledFunctionsInTryStatement"
+      );
 
     return await this.getListOfCalledFunctions([element.block]);
   }
 
   async getListOfCalledFunctionsInCatchClause(element) {
-    if (!isCatchClause(element)) throw Error('This is not a catch clause in getListOfCalledFunctionsInCatchClause');
+    if (!isCatchClause(element))
+      throw Error(
+        "This is not a catch clause in getListOfCalledFunctionsInCatchClause"
+      );
 
     return await this.getListOfCalledFunctions([element.body]);
   }
 
   async getListOfCalledFunctionsInReturnStatement(element) {
-    if (!isReturnStatement(element)) throw Error('This is not a return statement in getListOfCalledFunctionsInReturnStatement');
+    if (!isReturnStatement(element))
+      throw Error(
+        "This is not a return statement in getListOfCalledFunctionsInReturnStatement"
+      );
     let callee = [];
     if (element.callee) {
       callee = [element.callee];
@@ -655,25 +848,37 @@ class FileHandler {
   }
 
   async getListOfCalledFunctionsInArrayExpression(element) {
-    if (!isArrayExpression(element)) throw Error('This is not a array expression in getListOfCalledFunctionsInArrayExpression');
+    if (!isArrayExpression(element))
+      throw Error(
+        "This is not a array expression in getListOfCalledFunctionsInArrayExpression"
+      );
 
     return await this.getListOfCalledFunctions(element.elements);
   }
 
   async getListOfCalledFunctionsInArrowFunctionExpression(element) {
-    if (!isArrowFunctionExpression(element)) throw Error('This is not a arrow function expression in getListOfCalledFunctionsInArrowFunctionExpression');
+    if (!isArrowFunctionExpression(element))
+      throw Error(
+        "This is not a arrow function expression in getListOfCalledFunctionsInArrowFunctionExpression"
+      );
 
     return await this.getListOfCalledFunctions([element.body]);
   }
 
   async getListOfCalledFunctionsInAwaitExpression(element) {
-    if (!isAwaitExpression(element)) throw Error('This is not a await expression in getListOfCalledFunctionsInAwaitExpression');
+    if (!isAwaitExpression(element))
+      throw Error(
+        "This is not a await expression in getListOfCalledFunctionsInAwaitExpression"
+      );
 
     return await this.getListOfCalledFunctions([element.argument]);
   }
 
   async getListOfCalledFunctionsInVariableDeclarator(element) {
-    if (!isVariableDeclarator(element)) throw Error('This is not a variable declarator in getListOfCalledFunctionsInVariableDeclarator');
+    if (!isVariableDeclarator(element))
+      throw Error(
+        "This is not a variable declarator in getListOfCalledFunctionsInVariableDeclarator"
+      );
     let childElements = [];
     if (element.init && !isIdentifier(element.init)) {
       childElements = [element.init];
@@ -684,75 +889,118 @@ class FileHandler {
   }
 
   async getListOfCalledFunctionsInVariableDeclaration(element) {
-    if (!isVariableDeclaration(element)) throw Error('This is not a variable declaration in getListOfCalledFunctionsInVariableDeclaration');
+    if (!isVariableDeclaration(element))
+      throw Error(
+        "This is not a variable declaration in getListOfCalledFunctionsInVariableDeclaration"
+      );
 
     return await this.getListOfCalledFunctions(element.declarations);
   }
 
   async getListOfCalledFunctionsInAssignmentExpression(element) {
-    if (!isAssignmentExpression(element)) throw Error('This is not a assignment expression in getListOfCalledFunctionsInAssignmentExpression');
+    if (!isAssignmentExpression(element))
+      throw Error(
+        "This is not a assignment expression in getListOfCalledFunctionsInAssignmentExpression"
+      );
 
     return await this.getListOfCalledFunctions([element.right]);
   }
 
   async getListOfCalledFunctionsInExpressionStatement(element) {
-    if (!isExpressionStatement(element)) throw Error('This is not a expression statement in getListOfCalledFunctionsInExpressionStatement');
+    if (!isExpressionStatement(element))
+      throw Error(
+        "This is not a expression statement in getListOfCalledFunctionsInExpressionStatement"
+      );
 
     return await this.getListOfCalledFunctions([element.expression]);
   }
 
   async getListOfCalledFunctionsInIfStatement(element) {
-    if (!isIfStatement(element)) throw Error('This is not a if statement in getListOfCalledFunctionsInIfStatement');
+    if (!isIfStatement(element))
+      throw Error(
+        "This is not a if statement in getListOfCalledFunctionsInIfStatement"
+      );
 
     return await this.getListOfCalledFunctions(element.consequent.body);
   }
 
   async getListOfCalledFunctionsInBlockStatement(element) {
-    if (!isBlockStatement(element)) throw Error('This is not a block statement in getListOfCalledFunctionsInBlockStatement');
+    if (!isBlockStatement(element))
+      throw Error(
+        "This is not a block statement in getListOfCalledFunctionsInBlockStatement"
+      );
 
     return await this.getListOfCalledFunctions(element.body);
   }
 
   async getListOfCalledFunctionsInNewExpression(element) {
-    if (!isNewExpression(element)) throw Error('This is not a new expression in getListOfCalledFunctionsInNewExpression');
+    if (!isNewExpression(element))
+      throw Error(
+        "This is not a new expression in getListOfCalledFunctionsInNewExpression"
+      );
 
     return await this.getListOfCalledFunctions(element.arguments);
   }
 
   async getListOfCalledFunctionsInUnaryExpression(element) {
-    if (!isUnaryExpression(element)) throw Error('This is not a unary expression in getListOfCalledFunctionsInUnaryExpression');
+    if (!isUnaryExpression(element))
+      throw Error(
+        "This is not a unary expression in getListOfCalledFunctionsInUnaryExpression"
+      );
 
     return await this.getListOfCalledFunctions([element.argument]);
   }
 
   async getListOfCalledFunctionsInLogicalExpression(element) {
-    if (!isLogicalExpression(element)) throw Error('This is not a logical expression in getListOfCalledFunctionsInLogicalExpression');
+    if (!isLogicalExpression(element))
+      throw Error(
+        "This is not a logical expression in getListOfCalledFunctionsInLogicalExpression"
+      );
 
-    let listOfCalledFunctions = await this.getListOfCalledFunctions([element.left]);
-    listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions([element.right]));
+    let listOfCalledFunctions = await this.getListOfCalledFunctions([
+      element.left,
+    ]);
+    listOfCalledFunctions = listOfCalledFunctions.concat(
+      await this.getListOfCalledFunctions([element.right])
+    );
 
     return listOfCalledFunctions;
   }
 
   async getListOfCalledFunctionsInConditionalExpression(element) {
-    if (!isConditionalExpression(element)) throw Error('This is not a conditional expression in getListOfCalledFunctionsInConditionalExpression');
+    if (!isConditionalExpression(element))
+      throw Error(
+        "This is not a conditional expression in getListOfCalledFunctionsInConditionalExpression"
+      );
 
-    let listOfCalledFunctions = await this.getListOfCalledFunctions([element.test]);
-    listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions([element.consequent]));
-    listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions([element.alternate]));
+    let listOfCalledFunctions = await this.getListOfCalledFunctions([
+      element.test,
+    ]);
+    listOfCalledFunctions = listOfCalledFunctions.concat(
+      await this.getListOfCalledFunctions([element.consequent])
+    );
+    listOfCalledFunctions = listOfCalledFunctions.concat(
+      await this.getListOfCalledFunctions([element.alternate])
+    );
 
     return listOfCalledFunctions;
   }
 
   async getListOfCalledFunctionsInBinaryExpression(element) {
-    if (!isBinaryExpression(element)) throw Error('This is not a binary expression in getListOfCalledFunctionsInBinaryExpression');
+    if (!isBinaryExpression(element))
+      throw Error(
+        "This is not a binary expression in getListOfCalledFunctionsInBinaryExpression"
+      );
 
-    let listOfCalledFunctions = await this.getListOfCalledFunctions([element.left]);
-    listOfCalledFunctions = listOfCalledFunctions.concat(await this.getListOfCalledFunctions([element.right]));
+    let listOfCalledFunctions = await this.getListOfCalledFunctions([
+      element.left,
+    ]);
+    listOfCalledFunctions = listOfCalledFunctions.concat(
+      await this.getListOfCalledFunctions([element.right])
+    );
 
     return listOfCalledFunctions;
   }
-
 
   async getListOfCalledFunctionsInFunctionAst(functionElement) {
     if (!functionElement) return [];
@@ -763,16 +1011,17 @@ class FileHandler {
       body = functionElement.body;
     }
     // adding jsDoc
-    if (functionElement && functionElement.jsDoc) body.jsDoc = functionElement.jsDoc;
+    if (functionElement && functionElement.jsDoc)
+      body.jsDoc = functionElement.jsDoc;
 
     if (isBlockStatement(body)) {
       return await this.getListOfCalledFunctionsInBlockStatement(body);
     } else if (isArrowFunctionExpression(body)) {
       return await this.getListOfCalledFunctionsInArrowFunctionExpression(body);
     } else {
-      console.error('Enexpected type in function ast', body);
+      console.error("Enexpected type in function ast", body);
     }
-    
+
     //return await this.getListOfCalledFunctionsInBlockStatement(body);
   }
 
@@ -781,8 +1030,6 @@ class FileHandler {
 
     return await this.getListOfCalledFunctions(ast);
   }
-
 }
 
 module.exports = FileHandler;
-

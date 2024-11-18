@@ -255,6 +255,11 @@ const isOptionalMemberExpression = (element) => (
   element.type === 'OptionalMemberExpression'
 );
 
+const isForOfStatement = (element) => (
+  element &&
+  element.type === 'ForOfStatement'
+);
+
 
 module.exports = {
   isFile,
@@ -312,5 +317,6 @@ module.exports = {
   isExportDefaultDeclaration,
   isMultiVariableImport,
   isLocalPath,
-  isOptionalMemberExpression
+  isOptionalMemberExpression,
+  isForOfStatement
 };
