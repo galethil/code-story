@@ -16,6 +16,7 @@ const {
   StringLiteral,
   RegExpLiteral,
   TemplateLiteral,
+  NullLiteral,
   ArrowFunctionExpression,
   IfStatement,
   ReturnStatement,
@@ -82,6 +83,8 @@ const isBinaryExpression = (element) => (element && element.type === BinaryExpre
 const isNumericLiteral = (element) => (element && element.type === NumericLiteral);
 //
 const isBooleanLiteral = (element) => (element && element.type === BooleanLiteral);
+//
+const isNullLiteral = (element) => (element && element.type === NullLiteral);
 // /* comment */
 const isCommentBlock = (element) => (element && element.type === CommentBlock);
 // {...spread}}
@@ -296,6 +299,7 @@ module.exports = {
   isBinaryExpression,
   isNumericLiteral,
   isBooleanLiteral,
+  isNullLiteral,
   isSpreadElement,
   isObjectProperty,
   hasLeadingComments,

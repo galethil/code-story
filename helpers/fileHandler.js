@@ -33,6 +33,7 @@ const {
   isBinaryExpression,
   isNumericLiteral,
   isBooleanLiteral,
+  isNullLiteral,
   isEs6Function,
   isClassicFunction,
   isTryStatement,
@@ -693,6 +694,8 @@ class FileHandler {
         // nothing to do with numeric literal
       } else if (isBooleanLiteral(bodyElement)) {
         // nothing to do with boolean literal
+      } else if (isNullLiteral(bodyElement)) {
+        // nothing to do with null literal
       } else if (isSpreadElement(bodyElement)) {
         listOfCalledFunctions = listOfCalledFunctions.concat(
           await this.getListOfCalledFunctionsInSpreadElement(bodyElement)

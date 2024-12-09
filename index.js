@@ -1,11 +1,11 @@
-const parser = require('@babel/parser');
-const fs = require('fs');
-const glob = require('glob');
+const parser = require("@babel/parser");
+const fs = require("fs");
+const glob = require("glob");
 
-const { text, filteredOnly, custom } = require('./helpers/output');
-const { isNamedFunction } = require('./helpers/questions');
-const FileHandler = require('./helpers/fileHandler');
-const { MemberExpression, Identifier } = require('./helpers/constants');
+const { text, filteredOnly, custom } = require("./helpers/output");
+const { isNamedFunction } = require("./helpers/questions");
+const FileHandler = require("./helpers/fileHandler");
+const { MemberExpression, Identifier } = require("./helpers/constants");
 
 let storyTemplate;
 
@@ -13,7 +13,8 @@ const describeFunction = async (file, functionName, params) => {
   const functionFile = new FileHandler(file, storyTemplate);
   await functionFile.load();
 
-  const functionDescription = await functionFile.getListOfCalledFunctionsInFunction(functionName, params);
+  const functionDescription =
+    await functionFile.getListOfCalledFunctionsInFunction(functionName, params);
 
   return functionDescription;
 };
@@ -22,7 +23,9 @@ const findUsages = async (file, functionName) => {
   const functionFile = new FileHandler(file, storyTemplate);
   await functionFile.load();
 
-  const list = await functionFile.getListOfSpecificFunctionsCallsInFile(functionName);
+  const list = await functionFile.getListOfSpecificFunctionsCallsInFile(
+    functionName
+  );
   // console.log('list', file);
   return list;
 };
@@ -31,7 +34,9 @@ const describeVariable = async (file, variableName) => {
   const functionFile = new FileHandler(file, storyTemplate);
   await functionFile.load();
 
-  const variableDescription = await functionFile.getDetailsOfVariable(variableName);
+  const variableDescription = await functionFile.getDetailsOfVariable(
+    variableName
+  );
 
   return variableDescription;
 };
@@ -46,7 +51,7 @@ const describeFiles = async (path) => {
     const variableDescription = await functionFile.getDetailsAboutAll();
 
     retArray.push(variableDescription);
-  };
+  }
 
   return retArray;
 };
@@ -71,15 +76,17 @@ const variableStory = async () => {
 
 const customStory = async () => {
   const { path } = storyTemplate;
+  if (!path) throw Error("`path` is required for custom story");
 
   return await describeFiles(path);
 };
 
-
 class Output {
   constructor(story) {
     this.filter = (condition, stories = this.filteredStory) => {
-      const elements = Array.isArray(stories.elements) ? stories.elements : stories;
+      const elements = Array.isArray(stories.elements)
+        ? stories.elements
+        : stories;
       elements.forEach((storyLine, index) => {
         if (!storyLine) delete stories.elements[index];
         if (!condition(storyLine)) {
@@ -94,8 +101,8 @@ class Output {
     };
     this.story = story;
     this.filteredStory = this.story;
-    this.filter(element => element && element.name);
-    
+    this.filter((element) => element && element.name);
+
     this.isFlat = false;
 
     this.flat = () => {
@@ -106,26 +113,27 @@ class Output {
         }
         const flatElements = [];
         if (!elements) return flatElements;
-        elements.forEach(storyLine => {
-          
+        elements.forEach((storyLine) => {
           flatElements.push(storyLine);
           if (storyLine.import && storyLine.import.functions) {
             flatElements.push(...flatLoop(storyLine.import.functions));
             delete storyLine.import.functions;
           }
-          
+
           if (storyLine.arguments) {
-            
             for (const argument of storyLine.arguments) {
-              if (argument.type === MemberExpression || argument.type === Identifier) {
-                flatElements.push({...argument, import: undefined});
+              if (
+                argument.type === MemberExpression ||
+                argument.type === Identifier
+              ) {
+                flatElements.push({ ...argument, import: undefined });
               }
               if (argument.import) {
                 flatElements.push(...flatLoop(argument.import.functions));
                 delete argument.import;
               }
             }
-            
+
             // storyLine.arguments = [];
           }
         });
@@ -142,7 +150,8 @@ class Output {
     this.raw = () => this.filteredStory;
     this.filteredOnly = () => filteredOnly(this.filteredStory);
     this.text = () => text(this.filteredStory);
-    this.output = (customFormatterFunction) => custom(this.filteredStory, customFormatterFunction);
+    this.output = (customFormatterFunction) =>
+      custom(this.filteredStory, customFormatterFunction);
   }
 }
 
@@ -171,7 +180,7 @@ class VariableOutput {
       const flatLoop = (elements) => {
         const flatElements = [];
         if (!elements) return flatElements;
-        elements.forEach(storyLine => {
+        elements.forEach((storyLine) => {
           flatElements.push(storyLine);
           if (storyLine.import && storyLine.import.functions) {
             flatElements.push(...flatLoop(storyLine.import.functions.elements));
@@ -186,13 +195,12 @@ class VariableOutput {
       return this;
     };
     this.findAll = () => {
-
-
       return this;
     };
     this.raw = () => this.filteredStory;
     this.text = () => text(this.filteredStory);
-    this.output = (customFormatterFunction) => custom(this.filteredStory, customFormatterFunction);
+    this.output = (customFormatterFunction) =>
+      custom(this.filteredStory, customFormatterFunction);
   }
 }
 
@@ -204,20 +212,20 @@ const codeStory = async (storyTemplateInput) => {
   let story;
 
   switch (type) {
-    case 'functionStory':
+    case "functionStory":
       story = await functionStory();
       break;
-    case 'usageStory':
+    case "usageStory":
       story = await usageStory();
       break;
-    case 'variableStory':
+    case "variableStory":
       story = await variableStory();
       return new VariableOutput(story);
-    case 'customStory':
+    case "customStory":
       story = await customStory();
       return new VariableOutput(story);
     default:
-      throw Error('This type of story is not defined');
+      throw Error("This type of story is not defined");
   }
 
   return new Output(story);

@@ -1,6 +1,6 @@
 {
   "name": "@galethil/code-story",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Generate workflows, description and whole story of what is going on in the code.",
   "main": "index.js",
   "scripts": {

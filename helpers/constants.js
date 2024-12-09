@@ -37,6 +37,8 @@ const BinaryExpression = 'BinaryExpression';
 const NumericLiteral = 'NumericLiteral';
 //
 const BooleanLiteral = 'BooleanLiteral';
+//
+const NullLiteral = 'NullLiteral';
 // /* comment */
 const CommentBlock = 'CommentBlock';
 // {...spread}
@@ -63,6 +65,7 @@ module.exports = {
   StringLiteral,
   RegExpLiteral,
   TemplateLiteral,
+  NullLiteral,
   ArrowFunctionExpression,
   IfStatement,
   ReturnStatement,
