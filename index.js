@@ -2,10 +2,15 @@ const parser = require("@babel/parser");
 const fs = require("fs");
 const glob = require("glob");
 
-const { text, filteredOnly, custom } = require("./helpers/output");
-const { isNamedFunction } = require("./helpers/questions");
+const {
+  text,
+  filteredOnly,
+  filteredOnlyFlat,
+  custom,
+} = require("./helpers/output");
 const FileHandler = require("./helpers/fileHandler");
 const { MemberExpression, Identifier } = require("./helpers/constants");
+const { loopAllChildren } = require("./helpers/readers");
 
 let storyTemplate;
 
@@ -75,10 +80,13 @@ const variableStory = async () => {
 };
 
 const customStory = async () => {
-  const { path } = storyTemplate;
-  if (!path) throw Error("`path` is required for custom story");
+  const { path, file, functionName } = storyTemplate;
+  if (!path && !file) throw Error("`path` or `file` is required for custom story");
 
-  return await describeFiles(path);
+  if (functionName) {
+    return await describeFunction(path || file, functionName);
+  }
+  return await describeFiles(path || file);
 };
 
 class Output {
@@ -204,6 +212,64 @@ class VariableOutput {
   }
 }
 
+class CustomOutput {
+  constructor(story) {
+    this.filter = (condition, stories = this.filteredStory) => {
+      loopAllChildren(stories, (storyLine) => {
+        if (!condition(storyLine)) {
+          storyLine.filteredOut = true;
+        } else {
+          storyLine.filteredOut = false;
+        }
+      });
+      // elements.forEach((storyLine, index) => {
+      //   if (!storyLine) return;
+      //   if (!storyLine && stories.elements) delete stories.elements[index];
+
+      //   if (!condition(storyLine)) {
+      //     storyLine.filteredOut = true;
+      //   }
+      //   if (storyLine.import && storyLine.import.functions) {
+      //     this.filter(condition, storyLine.import.functions);
+      //   }
+      //   this.filter(condition, loopAllChildren(storyLine));
+      // });
+
+      return this;
+    };
+    this.story = story;
+    this.filteredStory = this.story;
+
+    this.isFlat = false;
+
+    this.flat = () => {
+      const flatLoop = (elements) => {
+        const flatElements = [];
+        if (!elements) {
+          return flatElements;
+        }
+        elements.forEach((storyLine) => {
+          flatElements.push(storyLine);
+          if (storyLine.import && storyLine.import.functions) {
+            flatElements.push(...flatLoop(storyLine.import.functions.elements));
+            delete storyLine.import.functions;
+          }
+        });
+
+        return flatElements;
+      };
+      this.filteredStory.elements = flatLoop(this.filteredStory.elements);
+
+      return this;
+    };
+
+    this.raw = () => this.filteredStory;
+    this.filteredOnlyFlat = (modifier) => loopAllChildren(this.filteredStory, modifier, true);
+    this.output = (customFormatterFunction) =>
+      loopAllChildren(this.filteredStory, customFormatterFunction);
+  }
+}
+
 const codeStory = async (storyTemplateInput) => {
   storyTemplate = storyTemplateInput;
 
@@ -223,7 +289,7 @@ const codeStory = async (storyTemplateInput) => {
       return new VariableOutput(story);
     case "customStory":
       story = await customStory();
-      return new VariableOutput(story);
+      return new CustomOutput(story);
     default:
       throw Error("This type of story is not defined");
   }

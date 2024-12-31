@@ -16,7 +16,7 @@ const text = (codeStory, spacing = 0) => {
   let finalText = '';
 
   const elements = Array.isArray(codeStory.elements) ? codeStory.elements : codeStory;
-  
+
   for (const storyLine of elements) {
     if (!storyLine.name) continue;
     if (!storyLine.filteredOut) {
@@ -54,7 +54,7 @@ const text = (codeStory, spacing = 0) => {
     }
     const argumentsWithVariable = storyLine.arguments?.filter(argument => argument.type === MemberExpression || argument.type === Identifier);
 
-    if (Array.isArray(argumentsWithVariable)) 
+    if (Array.isArray(argumentsWithVariable))
     for (const argument of argumentsWithVariable) {
       finalText += simpleText(`-> Argument: ${argument.name}`, spacing + 1);
       if (argument.import && argument.import.functions) {
@@ -69,7 +69,7 @@ const text = (codeStory, spacing = 0) => {
 
 const filteredOnly = (codeStory) => {
   let final = [];
-  
+
   for (const storyLine of codeStory) {
     if (!storyLine.name) continue;
     if (!storyLine.filteredOut) {
@@ -81,11 +81,41 @@ const filteredOnly = (codeStory) => {
     }
     const argumentsWithVariable = storyLine.arguments?.filter(argument => argument.type === MemberExpression || argument.type === Identifier);
 
-    if (Array.isArray(argumentsWithVariable)) 
+    if (Array.isArray(argumentsWithVariable))
     for (const argument of argumentsWithVariable) {
       if (argument.import && argument.import.functions) {
         final.push(...filteredOnly(argument.import.functions));
       }
+    }
+
+  }
+
+  return final;
+};
+
+const filteredOnlyFlat = (codeStory) => {
+  let final = [];
+
+  for (const storyLine of codeStory) {
+    if (!storyLine.filteredOut) {
+      final.push(storyLine);
+    }
+
+    if (storyLine.import && storyLine.import.functions) {
+      final.push(...filteredOnlyFlat(storyLine.import.functions));
+    }
+    const argumentsWithVariable = storyLine.arguments?.filter(argument => argument.type === MemberExpression || argument.type === Identifier);
+
+    if (Array.isArray(argumentsWithVariable))
+    for (const argument of argumentsWithVariable) {
+      if (argument.import && argument.import.functions) {
+        final.push(...filteredOnly(argument.import.functions));
+      }
+    }
+
+    // loop elements of files
+    if (storyLine.program && storyLine.program.body) {
+      final.push(...filteredOnlyFlat(storyLine.program.body));
     }
 
   }
@@ -119,5 +149,6 @@ const custom = (codeStory, formattingFunction) => {
 module.exports = {
   text,
   filteredOnly,
+  filteredOnlyFlat,
   custom
 }

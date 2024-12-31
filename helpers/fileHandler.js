@@ -56,6 +56,12 @@ const {
   isSpreadElement,
   isObjectProperty,
   isForOfStatement,
+  isJSXElement,
+  isJSXText,
+  isJSXExpressionContainer,
+  isTaggedTemplateExpression,
+  isJSXAttribute,
+  isJSXSpreadAttribute,
 } = require("./questions");
 const {
   getFileImports,
@@ -95,7 +101,7 @@ class FileHandler {
   }
 
   async load() {
-    this.ast = await getAst(this.file);
+    this.ast = await getAst(this.file, undefined, { babelPlugins: this.options.babelPlugins || []});
     this.loadImports();
   }
 
@@ -419,6 +425,11 @@ class FileHandler {
         formattedFunc.name = element.callee.name;
         formattedFunc.variableName = element.callee.name;
 
+        // e.g. foo()()
+      } else if (element.callee && element.callee.callee && element.callee.callee.name) {
+        formattedFunc.name = element.callee.callee.name;
+        formattedFunc.variableName = element.callee.callee.name;
+
         // e.g. logger.debug()
       } else if (
         element.callee &&
@@ -433,7 +444,7 @@ class FileHandler {
       } else if (element.callee && isMemberExpression(element.callee)) {
         return await this.getFormattedCalledFunction(element.callee.object);
       } else {
-        console.log("kk");
+        console.log("kk", element);
       }
 
       // e.g. (await someAsyncCall())
@@ -553,6 +564,7 @@ class FileHandler {
 
   async getListOfCalledFunctions(elements) {
     let listOfCalledFunctions = [];
+
     if (isFile(elements)) {
       return this.getListOfCalledFunctions(elements.program);
     } else if (isProgram(elements)) {
@@ -569,6 +581,12 @@ class FileHandler {
           `${this.file}:${bodyElement.loc?.start?.line}:${bodyElement.loc?.start?.column} ${bodyElement.type}`
         );
 
+      // match custom condition
+      if (this.options.customElementCondition) {
+        if (this.options.customElementCondition(bodyElement)) {
+          listOfCalledFunctions.push({file: this.file, ast: bodyElement, imports: this.imports});
+        }
+      }
       if (isCallExpression(bodyElement)) {
         // e.g. users.filter().map().format()
         if (
@@ -718,6 +736,26 @@ class FileHandler {
         listOfCalledFunctions = listOfCalledFunctions.concat(
           await this.getListOfCalledFunctionsInForOfStatement(bodyElement)
         );
+      } else if (isJSXElement(bodyElement)) {
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInJSXElement(bodyElement)
+        );
+      } else if (isJSXText(bodyElement)) {
+        // nothing to do with jsx text
+      } else if (isJSXExpressionContainer(bodyElement)) {
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInJSXExpressionContainer(bodyElement)
+        );
+      } else if (isTaggedTemplateExpression(bodyElement)) {
+        // nothing to do with tagged template expression
+      } else if (isJSXAttribute(bodyElement)) {
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInJSXAttribute(bodyElement)
+        );
+      } else if (isJSXSpreadAttribute(bodyElement)) {
+        listOfCalledFunctions = listOfCalledFunctions.concat(
+          await this.getListOfCalledFunctionsInJSXSpreadAttribute(bodyElement)
+        );
       } else if (bodyElement === undefined) {
         // ignore undefined
       } else {
@@ -802,6 +840,48 @@ class FileHandler {
     if (element.right) listOFBlocks.push(element.right);
 
     return await this.getListOfCalledFunctions(listOFBlocks);
+  }
+
+  async getListOfCalledFunctionsInJSXElement(element) {
+    if (!isJSXElement(element))
+      throw Error(
+        "This is not a JSX element in getListOfCalledFunctionsInJSXElement"
+      );
+
+    const listOFBlocks = [];
+    if (element?.openingElement?.attributes) {
+      listOFBlocks.push(...element.openingElement.attributes);
+    }
+    if (element.children) listOFBlocks.push(...element.children);
+
+    return await this.getListOfCalledFunctions(listOFBlocks);
+  }
+
+  async getListOfCalledFunctionsInJSXExpressionContainer(element) {
+    if (!isJSXExpressionContainer(element))
+      throw Error(
+        "This is not a JSX expression container in getListOfCalledFunctionsInJSXExpressionContainer"
+      );
+
+    return await this.getListOfCalledFunctions([element.expression]);
+  }
+
+  async getListOfCalledFunctionsInJSXAttribute(element) {
+    if (!isJSXAttribute(element))
+      throw Error(
+        "This is not a JSX attribute in getListOfCalledFunctionsInJSXAttribute"
+      );
+
+    return await this.getListOfCalledFunctions([element.value]);
+  }
+
+  async getListOfCalledFunctionsInJSXSpreadAttribute(element) {
+    if (!isJSXSpreadAttribute(element))
+      throw Error(
+        "This is not a JSX spread attribute in getListOfCalledFunctionsInJSXSpreadAttribute"
+      );
+
+    return await this.getListOfCalledFunctions([element.argument]);
   }
 
   async getListOfCalledFunctionsInTryCache(element) {

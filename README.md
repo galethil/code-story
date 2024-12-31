@@ -70,4 +70,65 @@ const listOfStatuses = story
   .elements;
 ```
 
+## Custom story
+
+Define what you are searching for in your code
+
+### Example: Give me all usages of "data-test-id" attribute in my React application
+
+```javascript
+const customStoryTemplate = {
+  type: "customStory",
+  path: "./ui/src/**/*.js",
+  babelPlugins: ["jsx", "classProperties"],
+};
+
+const story = await codeStory(customStoryTemplate);
+
+const dataTestIds = story
+  // filter only JSX elements that contain "data-test-id"
+  .filter(
+    (storyLine) =>
+      storyLine.type === "JSXElement" &&
+      storyLine.openingElement.attributes.find(
+        (attr) => attr.name?.name === "data-test-id"
+      )
+  )
+  // make output flat into one flat array / custom modifier function to add also parent file name
+  .filteredOnlyFlat(
+    (storyLine, parentElements) =>
+      (storyLine.file = parentElements[parentElements.length - 1])
+  )
+  // throw away all that was filtered out
+  .filter((storyLine) => storyLine?.filteredOut === false)
+  // format nice output for our needs
+  .map((storyLine) => {
+    return {
+      name: storyLine.openingElement.name.name,
+      dataTestId: storyLine.openingElement.attributes.find(
+        (attr) => attr.name?.name === "data-test-id"
+      ).value?.value,
+      file: storyLine.file.fileLoc,
+    };
+  });
+
+console.log(dataTestIds)
+// OUTPUT
+//   {
+//     name: 'div',
+//     dataTestId: 'activityAdd-rightSection-addNewActivity',
+//     file: './ui/src/containers/admin/AddNewActivity.js'
+//   },
+//   {
+//     name: 'Tabs',
+//     dataTestId: 'reports-menu',
+//     file: './ui/src/containers/admin/AdminReports.js'
+//   },
+//   {
+//     name: 'Button',
+//     dataTestId: 'submitButton',
+//     file: './ui/src/components/SubmitButton.js'
+//   },
+//   ...
+```
 
